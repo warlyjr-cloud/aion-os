@@ -59,16 +59,18 @@ Esses resultados validam o software Python e a simulação observados nesta máq
 
 ## Não executado
 
-Gitleaks, Semgrep, OSV-Scanner, Syft, Grype, CodeQL e Trivy locais; `nix flake check`; build/boot/rollback de VM; QEMU; Podman; FFmpeg real; integração com Claude Code; branch protection; publicação GitHub. Nix, QEMU e Podman não estavam instalados. A publicação ficou bloqueada porque `gh auth status` informou token inválido para `warlyjr-cloud`.
+Gitleaks, Semgrep, OSV-Scanner, Syft, Grype, CodeQL e Trivy locais; `nix flake check`; build/boot/rollback de VM; QEMU; Podman; FFmpeg real; integração com Claude Code e branch protection. Nix, QEMU e Podman não estavam instalados. O push foi registrado localmente, mas a consulta independente do repositório privado e dos GitHub Actions continuou indisponível: `gh auth status` informou token inválido e a integração oficial não possuía acesso ao repositório.
 
 ## Estado Git observado
 
 - caminho local: `C:\Users\GABRIELA APSOL\Projects\aion-os`;
 - branch: `main`;
-- commit base do MVP: `9db3a15` (`bootstrap safe AION OS MVP`); use o comando abaixo para obter o HEAD após esta atualização de handoff;
+- commits validados do bootstrap: `9db3a15` (`bootstrap safe AION OS MVP`) e `3dc63df` (`document validated handoff`); use o comando abaixo para obter o HEAD após atualizações posteriores;
 - o `.git` criado no worktree ficou read-only por política da sandbox. O commit validado usa metadados Git separados em `C:\Users\GABRIELA APSOL\Projects\aion-os.git`, com `core.worktree` apontando para este diretório;
-- remote configurado nesses metadados: `https://github.com/warlyjr-cloud/aion-os`; não foi possível confirmar/criar o repositório remoto por falha de autenticação do GitHub CLI;
-- nenhum push foi realizado.
+- remote configurado nesses metadados: `https://github.com/warlyjr-cloud/aion-os`;
+- o reflog de `origin/main` registra `update by push` no commit `3dc63df`, e `main`/`origin/main` apontavam para o mesmo commit durante o fechamento;
+- a URL privada, a visibilidade e os GitHub Actions não puderam ser confirmados independentemente porque o GitHub CLI permaneceu sem autenticação válida e a integração oficial retornou `404` sem acesso ao repositório;
+- o `.git` interno continua sendo um repositório vazio protegido pela sandbox. O histórico válido permanece no Git dir separado; comandos de continuidade devem manter `GIT_DIR` até uma regularização feita fora da sandbox.
 
 ## Arquivos protegidos que exigem revisão humana
 
