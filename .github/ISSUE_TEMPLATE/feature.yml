@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a capability, evaluation, or safe product improvement
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: User objective
+      description: Describe the outcome, not a free-form privileged command.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Expected evidence of improvement
+      description: State baseline, metrics, and success criteria.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Highest expected risk tier
+      options:
+        - "0 - observation only"
+        - "1 - reversible isolated change"
+        - "2 - elevated isolated change"
+        - "3 - host-sensitive"
+        - "4 - critical or TCB-adjacent"
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: Capabilities and scope
+      description: List the smallest operations, resources, duration, and environments required.
+    validations:
+      required: true
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback and stop conditions
+    validations:
+      required: true

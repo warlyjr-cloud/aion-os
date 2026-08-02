@@ -1,0 +1,59 @@
+name: Security scanners
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Scan committed content for secrets
+        run: >-
+          docker run --rm
+          --volume "$PWD:/repo:ro"
+          ghcr.io/gitleaks/gitleaks:v8.30.1
+          detect --source=/repo --redact --no-banner
+
+  semgrep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Run static analysis
+        run: >-
+          docker run --rm
+          --env SEMGREP_SEND_METRICS=off
+          --volume "$PWD:/src:ro"
+          semgrep/semgrep:1.164.0
+          semgrep scan --config p/default --error --metrics off /src
+
+  osv:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Scan dependency manifests
+        run: >-
+          docker run --rm
+          --volume "$PWD:/src:ro"
+          ghcr.io/google/osv-scanner:v2.3.8
+          scan source --recursive /src

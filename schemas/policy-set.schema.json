@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/policy-set.schema.json",
+  "title": "AION Policy Set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "default_effect", "policies"],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "schema_version": {"const": "1.0"},
+    "default_effect": {"const": "deny"},
+    "policies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "priority", "effect", "match", "reason"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^pol_[a-z0-9][a-z0-9_-]{2,63}$"},
+          "priority": {"type": "integer", "minimum": 0, "maximum": 10000},
+          "effect": {"enum": ["allow", "deny", "require_approval", "require_clarification", "require_isolation"]},
+          "match": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "action_types": {"$ref": "#/$defs/stringSet"},
+              "target_patterns": {"$ref": "#/$defs/stringSet"},
+              "required_capabilities": {"$ref": "#/$defs/stringSet"},
+              "risk_tiers": {
+                "type": "array",
+                "items": {"type": "integer", "minimum": 0, "maximum": 4},
+                "uniqueItems": true
+              },
+              "environments": {
+                "type": "array",
+                "items": {"enum": ["simulation", "lab", "staging", "host"]},
+                "uniqueItems": true
+              }
+            },
+            "minProperties": 1
+          },
+          "reason": {"type": "string", "minLength": 1, "maxLength": 1024}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stringSet": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024},
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  }
+}

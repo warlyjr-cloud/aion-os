@@ -1,0 +1,75 @@
+{
+  "$schema": "../schemas/toolchain-lock.schema.json",
+  "schema_version": "1.0",
+  "runtime": {
+    "python": {
+      "constraint": ">=3.12",
+      "source": "https://www.python.org/"
+    },
+    "pydantic": {
+      "constraint": "==2.13.4",
+      "source": "https://pypi.org/project/pydantic/"
+    },
+    "typer": {
+      "constraint": "==0.27.0",
+      "source": "https://pypi.org/project/typer/"
+    }
+  },
+  "development": {
+    "hypothesis": {
+      "constraint": "==6.165.0",
+      "source": "https://pypi.org/project/hypothesis/"
+    },
+    "jsonschema": {
+      "constraint": "==4.26.0",
+      "source": "https://pypi.org/project/jsonschema/"
+    },
+    "pyright": {
+      "constraint": "==1.1.411",
+      "source": "https://pypi.org/project/pyright/"
+    },
+    "pytest": {
+      "constraint": "==8.4.2",
+      "source": "https://pypi.org/project/pytest/"
+    },
+    "pytest-cov": {
+      "constraint": "==6.3.0",
+      "source": "https://pypi.org/project/pytest-cov/"
+    },
+    "ruff": {
+      "constraint": "==0.16.1",
+      "source": "https://pypi.org/project/ruff/"
+    },
+    "uv": {
+      "constraint": "==0.12.1",
+      "source": "https://pypi.org/project/uv/"
+    }
+  },
+  "security": {
+    "gitleaks": {
+      "constraint": "flake.lock:nixpkgs",
+      "source": "https://github.com/gitleaks/gitleaks"
+    },
+    "grype": {
+      "constraint": "flake.lock:nixpkgs",
+      "source": "https://github.com/anchore/grype"
+    },
+    "osv-scanner": {
+      "constraint": "flake.lock:nixpkgs",
+      "source": "https://github.com/google/osv-scanner"
+    },
+    "semgrep": {
+      "constraint": "flake.lock:nixpkgs",
+      "source": "https://github.com/semgrep/semgrep"
+    },
+    "syft": {
+      "constraint": "flake.lock:nixpkgs",
+      "source": "https://github.com/anchore/syft"
+    }
+  },
+  "nix": {
+    "input": "NixOS/nixpkgs",
+    "revision": "b3aad468604d3e488d627c0b43984eb60e75e782",
+    "nar_hash": "sha256-eplAP+rorKKd0gNjV3rA6+0WMzb1X1i16F5m5pASnjA="
+  }
+}

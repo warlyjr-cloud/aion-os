@@ -1,0 +1,75 @@
+{
+  "$schema": "../schemas/policy-set.schema.json",
+  "schema_version": "1.0",
+  "default_effect": "deny",
+  "policies": [
+    {
+      "id": "pol_deny_freeform_shell",
+      "priority": 1000,
+      "effect": "deny",
+      "match": {
+        "action_types": ["shell.execute", "shell.freeform"],
+        "environments": ["simulation", "lab", "staging", "host"]
+      },
+      "reason": "Model-produced free-form shell is outside the typed action boundary."
+    },
+    {
+      "id": "pol_deny_protected_paths",
+      "priority": 1000,
+      "effect": "deny",
+      "match": {
+        "action_types": ["file.write", "file.delete", "file.move"],
+        "target_patterns": [
+          "docs/SAFETY_CONSTITUTION.md",
+          "docs/TCB_SPECIFICATION.md",
+          "src/tcb/**",
+          "policies/**",
+          ".github/workflows/**"
+        ]
+      },
+      "reason": "Protected safety, TCB, policy, and workflow files require a separate human review process."
+    },
+    {
+      "id": "pol_deny_privilege_escalation",
+      "priority": 1000,
+      "effect": "deny",
+      "match": {
+        "action_types": ["identity.assume_root", "security.disable_audit", "security.disable_sandbox", "rollback.disable"],
+        "environments": ["simulation", "lab", "staging", "host"]
+      },
+      "reason": "Authority, audit, isolation, and rollback are immutable safety controls."
+    },
+    {
+      "id": "pol_require_approval_host",
+      "priority": 900,
+      "effect": "require_approval",
+      "match": {
+        "environments": ["host"],
+        "risk_tiers": [1, 2, 3, 4]
+      },
+      "reason": "All non-trivial host mutations require explicit human approval."
+    },
+    {
+      "id": "pol_require_vm_untrusted_code",
+      "priority": 800,
+      "effect": "require_isolation",
+      "match": {
+        "action_types": ["code.execute_untrusted", "generation.boot"],
+        "risk_tiers": [2, 3, 4]
+      },
+      "reason": "Untrusted code and new generations must execute in a VM boundary."
+    },
+    {
+      "id": "pol_allow_simulated_package_proposal",
+      "priority": 100,
+      "effect": "allow",
+      "match": {
+        "action_types": ["package.propose"],
+        "required_capabilities": ["package.propose:ffmpeg"],
+        "risk_tiers": [0, 1],
+        "environments": ["simulation", "lab"]
+      },
+      "reason": "A capability-scoped proposal is reversible and does not alter the host."
+    }
+  ]
+}

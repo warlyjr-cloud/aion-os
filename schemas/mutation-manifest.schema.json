@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/mutation-manifest.schema.json",
+  "title": "AION Proof-Carrying Mutation Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mutation_id",
+    "objective_id",
+    "parent_generation",
+    "proposer",
+    "changed_files",
+    "required_capabilities",
+    "risk_tier",
+    "evidence",
+    "rollback_plan",
+    "decision"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "schema_version": {"const": "1.0"},
+    "mutation_id": {"type": "string", "pattern": "^mut_[a-z0-9][a-z0-9_-]{7,63}$"},
+    "objective_id": {"type": "string", "pattern": "^obj_[a-z0-9][a-z0-9_-]{7,63}$"},
+    "parent_generation": {"type": ["string", "null"], "maxLength": 128},
+    "proposer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor_id", "kind"],
+      "properties": {
+        "actor_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "kind": {"enum": ["human", "agent", "system"]},
+        "model": {"type": ["string", "null"], "maxLength": 256}
+      }
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.).+$"},
+      "uniqueItems": true
+    },
+    "required_capabilities": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]*:[^\\s]+$"},
+      "uniqueItems": true
+    },
+    "risk_tier": {"type": "integer", "minimum": 0, "maximum": 4},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checksums", "reports"],
+      "properties": {
+        "checksums": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "algorithm", "digest"],
+            "properties": {
+              "path": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.).+$"},
+              "algorithm": {"const": "sha256"},
+              "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+            }
+          }
+        },
+        "reports": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^(?!/)(?!.*\\.\\.).+$"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "rollback_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "verified"],
+      "properties": {
+        "strategy": {"enum": ["discard_candidate", "restore_generation"]},
+        "target_generation": {"type": ["string", "null"], "maxLength": 128},
+        "verified": {"type": "boolean"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "decided_by"],
+      "properties": {
+        "status": {"enum": ["pending", "approved", "rejected", "archived"]},
+        "decided_by": {"type": ["string", "null"], "maxLength": 128}
+      }
+    }
+  }
+}

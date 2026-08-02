@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/system-genome.schema.json",
+  "title": "AION System Genome",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generation_id",
+    "parent_generation_id",
+    "capabilities",
+    "skills",
+    "configuration_hash",
+    "mutation_id",
+    "simulated"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "generation_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "parent_generation_id": {"type": ["string", "null"], "maxLength": 128},
+    "capabilities": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 512},
+      "uniqueItems": true
+    },
+    "skills": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 512},
+      "uniqueItems": true
+    },
+    "configuration_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "mutation_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "simulated": {"type": "boolean", "default": true}
+  }
+}

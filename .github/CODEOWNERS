@@ -1,0 +1,20 @@
+# Repository-wide fallback owner.
+* @warlyjr-cloud
+
+# Trusted computing base and safety invariants.
+/docs/SAFETY_CONSTITUTION.md @warlyjr-cloud
+/docs/TCB_SPECIFICATION.md @warlyjr-cloud
+/src/tcb/ @warlyjr-cloud
+/src/audit/ @warlyjr-cloud
+/src/executor/ @warlyjr-cloud
+/policies/ @warlyjr-cloud
+
+# Supply chain, release, and host configuration.
+/.github/workflows/ @warlyjr-cloud
+/.github/dependabot.yml @warlyjr-cloud
+/flake.nix @warlyjr-cloud
+/flake.lock @warlyjr-cloud
+/nix/ @warlyjr-cloud
+/schemas/ @warlyjr-cloud
+/tools/plugin-lock.json @warlyjr-cloud
+/tools/toolchain-lock.json @warlyjr-cloud

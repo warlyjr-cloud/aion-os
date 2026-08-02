@@ -1,0 +1,101 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from enum import StrEnum
+from pathlib import Path
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class MemoryTrust(StrEnum):
+    UNTRUSTED = "untrusted"
+    OBSERVED = "observed"
+    VERIFIED = "verified"
+    APPROVED = "approved"
+
+
+class MemoryClass(StrEnum):
+    EXTERNAL_CONTENT = "external_content"
+    OBSERVATION = "observation"
+    PREFERENCE = "preference"
+    VERIFIED_FACT = "verified_fact"
+    APPROVED_DECISION = "approved_decision"
+    CANDIDATE_EXPERIENCE = "candidate_experience"
+    VALIDATED_EXPERIENCE = "validated_experience"
+    SAFETY_RULE = "safety_rule"
+
+
+class MemoryEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    memory_id: str
+    origin: str
+    provenance: list[str]
+    memory_class: MemoryClass
+    trust: MemoryTrust
+    content: str
+    context: str
+    evidence: list[str] = Field(default_factory=list)
+    scope: str
+    expires_at: datetime | None = None
+    generation_id: str | None = None
+    history: list[str] = Field(default_factory=list)
+    quarantined: bool = False
+    action_authority: bool = False
+    reversal: str
+
+
+class MemoryStore:
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def add(self, entry: MemoryEntry) -> None:
+        if entry.memory_class is MemoryClass.SAFETY_RULE:
+            raise ValueError(
+                "safety rules belong to the immutable constitution, not evolving memory"
+            )
+        if entry.trust is MemoryTrust.UNTRUSTED and entry.action_authority:
+            raise ValueError("untrusted memory cannot carry action authority")
+        entries = {item.memory_id: item for item in self.list_all()}
+        if entry.memory_id in entries:
+            raise ValueError(f"duplicate memory id: {entry.memory_id}")
+        entries[entry.memory_id] = entry
+        self._save(entries.values())
+
+    def promote(self, memory_id: str, *, evidence: str, approved_by: str) -> MemoryEntry:
+        entries = {item.memory_id: item for item in self.list_all()}
+        entry = entries[memory_id]
+        if entry.quarantined:
+            raise ValueError("quarantined memory cannot be promoted")
+        if not evidence.strip() or not approved_by.strip():
+            raise ValueError("promotion requires evidence and an approver")
+        entry.trust = MemoryTrust.VERIFIED
+        entry.evidence.append(evidence)
+        entry.history.append(f"verified by {approved_by} at {datetime.now(UTC).isoformat()}")
+        entries[memory_id] = entry
+        self._save(entries.values())
+        return entry
+
+    def quarantine(self, memory_id: str, *, reason: str) -> MemoryEntry:
+        entries = {item.memory_id: item for item in self.list_all()}
+        entry = entries[memory_id]
+        entry.quarantined = True
+        entry.action_authority = False
+        entry.history.append(f"quarantined: {reason}")
+        entries[memory_id] = entry
+        self._save(entries.values())
+        return entry
+
+    def list_all(self) -> list[MemoryEntry]:
+        if not self.path.exists():
+            return []
+        return [
+            MemoryEntry.model_validate_json(line)
+            for line in self.path.read_text(encoding="utf-8").splitlines()
+            if line
+        ]
+
+    def _save(self, entries: object) -> None:
+        serialized = "\n".join(item.model_dump_json() for item in entries)  # type: ignore[attr-defined]
+        self.path.write_text(serialized + ("\n" if serialized else ""), encoding="utf-8")

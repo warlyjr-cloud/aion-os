@@ -1,0 +1,6 @@
+{
+  "clock": "fixed",
+  "network": "disabled",
+  "random_seed": 0,
+  "runtime": "digital-twin-v1"
+}

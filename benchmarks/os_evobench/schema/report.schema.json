@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion.invalid/schemas/os-evobench-report-v1.json",
+  "title": "AION OS-EvoBench Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "benchmark_id",
+    "format_version",
+    "suite_digest",
+    "run_id",
+    "candidate_id",
+    "baseline_id",
+    "offline",
+    "aggregate",
+    "task_results"
+  ],
+  "properties": {
+    "benchmark_id": {"type": "string"},
+    "format_version": {"type": "string"},
+    "suite_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "run_id": {"type": "string", "pattern": "^[a-f0-9]{24}$"},
+    "candidate_id": {"type": "string"},
+    "baseline_id": {"type": "string"},
+    "offline": {"const": true},
+    "aggregate": {
+      "type": "object",
+      "required": ["tasks_total", "tasks_succeeded", "guarded_failures", "score"],
+      "properties": {
+        "tasks_total": {"type": "integer", "minimum": 0},
+        "tasks_succeeded": {"type": "integer", "minimum": 0},
+        "guarded_failures": {"type": "integer", "minimum": 0},
+        "score": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "task_results": {"type": "array", "items": {"type": "object"}}
+  }
+}

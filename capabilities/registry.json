@@ -1,0 +1,59 @@
+{
+  "$schema": "../schemas/capability-registry.schema.json",
+  "schema_version": "1.0",
+  "default_behavior": "deny",
+  "capabilities": [
+    {
+      "id": "file.read:/workspace/video",
+      "description": "Read video inputs inside the isolated workspace.",
+      "operation": "file.read",
+      "resource_pattern": "/workspace/video/**",
+      "environments": ["simulation", "lab"],
+      "data_classifications": ["public", "internal"],
+      "default_ttl_seconds": 900,
+      "max_uses": 100,
+      "transferable": false,
+      "requires_human_approval": false,
+      "network_destinations": []
+    },
+    {
+      "id": "package.propose:ffmpeg",
+      "description": "Propose ffmpeg in a candidate Nix configuration without installing it on the host.",
+      "operation": "package.propose",
+      "resource_pattern": "nixpkgs#ffmpeg",
+      "environments": ["simulation", "lab"],
+      "data_classifications": ["public", "internal"],
+      "default_ttl_seconds": 900,
+      "max_uses": 10,
+      "transferable": false,
+      "requires_human_approval": false,
+      "network_destinations": []
+    },
+    {
+      "id": "generation.build:aion-lab",
+      "description": "Build an AION Lab candidate in an isolated Nix builder.",
+      "operation": "generation.build",
+      "resource_pattern": "aion-lab",
+      "environments": ["simulation", "lab"],
+      "data_classifications": ["public", "internal"],
+      "default_ttl_seconds": 3600,
+      "max_uses": 3,
+      "transferable": false,
+      "requires_human_approval": false,
+      "network_destinations": []
+    },
+    {
+      "id": "memory.write:operational",
+      "description": "Write quarantinable operational memory with provenance.",
+      "operation": "memory.write",
+      "resource_pattern": "operational/**",
+      "environments": ["simulation", "lab"],
+      "data_classifications": ["public", "internal"],
+      "default_ttl_seconds": 300,
+      "max_uses": 20,
+      "transferable": false,
+      "requires_human_approval": false,
+      "network_destinations": []
+    }
+  ]
+}

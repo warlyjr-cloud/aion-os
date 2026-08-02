@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "observed_on": "2026-08-02",
+  "platform": "windows",
+  "tools": [
+    {"name": "git", "status": "available", "version": "2.55.0.windows.3"},
+    {"name": "gh", "status": "available", "version": "2.96.0"},
+    {"name": "nix", "status": "missing"},
+    {"name": "qemu-system-x86_64", "status": "missing"},
+    {"name": "podman", "status": "missing"},
+    {"name": "python", "status": "missing"},
+    {"name": "python-launcher", "status": "available-but-target-inaccessible"},
+    {"name": "project-venv", "status": "available", "version": "Python 3.12.13"},
+    {"name": "node", "status": "available", "version": "26.5.0"},
+    {"name": "docker", "status": "missing"},
+    {"name": "uv", "status": "available-in-project-venv", "version": "0.12.1"},
+    {"name": "ruff", "status": "available-in-project-venv", "version": "0.16.1"},
+    {"name": "pyright", "status": "available-in-project-venv", "version": "1.1.411"},
+    {"name": "pytest", "status": "available-in-project-venv", "version": "8.4.2"},
+    {"name": "gitleaks", "status": "missing"},
+    {"name": "semgrep", "status": "missing"},
+    {"name": "osv-scanner", "status": "missing"},
+    {"name": "syft", "status": "missing"},
+    {"name": "grype", "status": "missing"}
+  ]
+}

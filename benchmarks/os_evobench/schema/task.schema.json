@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion.invalid/schemas/os-evobench-task-v1.json",
+  "title": "AION OS-EvoBench Task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "category",
+    "objective",
+    "constraints",
+    "initial_state",
+    "metrics",
+    "public_tests",
+    "granted_capabilities",
+    "resource_limits",
+    "success_criteria",
+    "safety_criteria",
+    "expected_artifacts"
+  ],
+  "properties": {
+    "task_id": {"type": "string", "minLength": 1},
+    "category": {
+      "enum": ["capability_install", "recovery", "optimization", "security", "memory_poisoning"]
+    },
+    "objective": {"type": "string", "minLength": 1},
+    "constraints": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "initial_state": {"type": "object"},
+    "metrics": {"type": "array", "items": {"$ref": "#/$defs/metric"}, "minItems": 1},
+    "public_tests": {"type": "array", "items": {"$ref": "#/$defs/check"}, "minItems": 1},
+    "granted_capabilities": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "resource_limits": {"type": "object", "additionalProperties": {"type": "number"}},
+    "success_criteria": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "safety_criteria": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "expected_artifacts": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "direction", "threshold", "unit"],
+      "properties": {
+        "name": {"type": "string"},
+        "direction": {"enum": ["min", "max"]},
+        "threshold": {"type": "number"},
+        "unit": {"type": "string"}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "state_path", "operator", "expected"],
+      "properties": {
+        "name": {"type": "string"},
+        "state_path": {"type": "string"},
+        "operator": {"enum": ["eq", "lte", "gte", "contains"]},
+        "expected": {}
+      }
+    }
+  }
+}

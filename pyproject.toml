@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aion-os"
+version = "0.1.0"
+description = "Safe, verifiable, and reproducible evolution engine for NixOS"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "AION contributors" }]
+dependencies = [
+  "pydantic==2.13.4",
+  "typer==0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "hypothesis==6.165.0",
+  "jsonschema==4.26.0",
+  "pyright==1.1.411",
+  "pytest==8.4.2",
+  "pytest-cov==6.3.0",
+  "ruff==0.16.1",
+  "uv==0.12.1",
+]
+
+[project.scripts]
+aionctl = "aionctl.cli:app"
+aiond = "aiond.daemon:main"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+  "src/actions",
+  "src/aionctl",
+  "src/aiond",
+  "src/audit",
+  "src/capabilities",
+  "src/evaluator",
+  "src/evolution",
+  "src/executor",
+  "src/genome",
+  "src/immune_memory",
+  "src/intent",
+  "src/model_council",
+  "src/policy",
+  "src/population",
+  "src/proofs",
+  "src/providers",
+  "src/red_team",
+  "src/tcb",
+  "src/vek",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing --cov-fail-under=80"
+testpaths = ["tests"]
+markers = [
+  "integration: crosses multiple AION components",
+  "security: validates a security invariant",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "RUF"]
+ignore = ["S101"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+include = ["src"]
+exclude = [".venv", "proofs", "benchmarks/os_evobench/reports"]
+venvPath = "."
+venv = ".venv"
+extraPaths = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]

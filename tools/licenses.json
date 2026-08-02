@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "project_license": "Apache-2.0",
+  "review_status": "direct-dependencies-recorded; transitive-review-pending-sbom",
+  "direct_dependencies": [
+    {
+      "name": "pydantic",
+      "constraint": ">=2.10,<3",
+      "license": "MIT",
+      "source": "https://github.com/pydantic/pydantic"
+    },
+    {
+      "name": "typer",
+      "constraint": ">=0.15,<1",
+      "license": "MIT",
+      "source": "https://github.com/fastapi/typer"
+    }
+  ],
+  "development_dependencies": [
+    {"name": "hypothesis", "license": "MPL-2.0"},
+    {"name": "pyright", "license": "MIT"},
+    {"name": "pytest", "license": "MIT"},
+    {"name": "pytest-cov", "license": "MIT"},
+    {"name": "ruff", "license": "MIT"}
+  ],
+  "notes": [
+    "This inventory is not a complete SBOM.",
+    "CI-generated SPDX JSON is the source for transitive dependency review.",
+    "Nix closure licenses must be reviewed from the built closure before distribution."
+  ]
+}

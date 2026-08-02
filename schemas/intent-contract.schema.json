@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/intent-contract.schema.json",
+  "title": "AION Intent Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "objective_id",
+    "objective",
+    "context",
+    "expected_result",
+    "constraints",
+    "authorized_data",
+    "prohibited_data",
+    "acceptable_risk",
+    "resources",
+    "priority",
+    "metrics",
+    "stop_criteria",
+    "permissions",
+    "approval_required",
+    "reversal",
+    "assumptions"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "objective_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "objective": {"type": "string", "minLength": 5, "maxLength": 2000},
+    "context": {"type": "string"},
+    "expected_result": {"type": "string"},
+    "constraints": {"$ref": "#/$defs/stringSet"},
+    "authorized_data": {"$ref": "#/$defs/stringSet"},
+    "prohibited_data": {"$ref": "#/$defs/stringSet"},
+    "acceptable_risk": {"type": "integer", "minimum": 0, "maximum": 3},
+    "resources": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "priority": {"enum": ["low", "normal", "high"], "default": "normal"},
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {"type": "number"}
+    },
+    "stop_criteria": {"$ref": "#/$defs/stringSet"},
+    "permissions": {"$ref": "#/$defs/stringSet"},
+    "approval_required": {"type": "boolean", "default": true},
+    "reversal": {"type": "string"},
+    "assumptions": {"$ref": "#/$defs/stringSet"}
+  },
+  "$defs": {
+    "stringSet": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}

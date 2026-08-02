@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/plugin-lock.schema.json",
+  "title": "AION Plugin Lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "installed", "policy"],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "schema_version": {"const": "1.0"},
+    "installed": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "source", "revision", "digest", "capabilities", "write_enabled"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{1,63}$"},
+          "kind": {"enum": ["mcp", "plugin"]},
+          "source": {"type": "string", "format": "uri"},
+          "revision": {"type": "string", "minLength": 7, "maxLength": 128},
+          "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "capabilities": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 256},
+            "uniqueItems": true
+          },
+          "write_enabled": {"type": "boolean"}
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "forbidden_classes"],
+      "properties": {
+        "default": {"const": "deny"},
+        "forbidden_classes": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1, "maxLength": 128},
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

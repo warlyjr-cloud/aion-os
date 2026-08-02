@@ -1,0 +1,54 @@
+name: SBOM and vulnerability review
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 8 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbom-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sbom:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Generate SPDX JSON with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: aion-os.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: false
+
+      - name: Scan SBOM with Grype
+        uses: anchore/scan-action@v7
+        with:
+          sbom: aion-os.spdx.json
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: sarif
+          output-file: grype.sarif
+
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-sbom-${{ github.run_id }}
+          path: |
+            aion-os.spdx.json
+            grype.sarif
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/toolchain-lock.schema.json",
+  "title": "AION Toolchain Lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "runtime", "development", "security", "nix"],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "schema_version": {"const": "1.0"},
+    "runtime": {"$ref": "#/$defs/toolMap"},
+    "development": {"$ref": "#/$defs/toolMap"},
+    "security": {"$ref": "#/$defs/toolMap"},
+    "nix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "revision", "nar_hash"],
+      "properties": {
+        "input": {"const": "NixOS/nixpkgs"},
+        "revision": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "nar_hash": {"type": "string", "pattern": "^sha256-[A-Za-z0-9+/]{43}=$"}
+      }
+    }
+  },
+  "$defs": {
+    "toolMap": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["constraint", "source"],
+        "properties": {
+          "constraint": {"type": "string", "minLength": 1, "maxLength": 128},
+          "source": {"type": "string", "format": "uri"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "../schemas/plugin-lock.schema.json",
+  "schema_version": "1.0",
+  "installed": [],
+  "policy": {
+    "default": "deny",
+    "forbidden_classes": [
+      "unrestricted-shell",
+      "broad-filesystem-write",
+      "external-memory",
+      "unversioned-plugin",
+      "repository-exfiltration",
+      "broad-credential-access"
+    ]
+  }
+}

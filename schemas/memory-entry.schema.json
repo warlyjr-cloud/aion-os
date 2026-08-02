@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aion-os.dev/schemas/memory-entry.schema.json",
+  "title": "AION Immune Memory Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "memory_id",
+    "origin",
+    "provenance",
+    "memory_class",
+    "trust",
+    "content",
+    "context",
+    "evidence",
+    "scope",
+    "expires_at",
+    "generation_id",
+    "history",
+    "quarantined",
+    "action_authority",
+    "reversal"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "format": "uri-reference"},
+    "memory_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "origin": {"type": "string", "minLength": 1, "maxLength": 512},
+    "provenance": {"$ref": "#/$defs/stringList"},
+    "memory_class": {
+      "enum": [
+        "external_content",
+        "observation",
+        "preference",
+        "verified_fact",
+        "approved_decision",
+        "candidate_experience",
+        "validated_experience",
+        "safety_rule"
+      ]
+    },
+    "trust": {"enum": ["untrusted", "observed", "verified", "approved"]},
+    "content": {"type": "string"},
+    "context": {"type": "string"},
+    "evidence": {"$ref": "#/$defs/stringList"},
+    "scope": {"type": "string"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "generation_id": {"type": ["string", "null"], "maxLength": 128},
+    "history": {"$ref": "#/$defs/stringList"},
+    "quarantined": {"type": "boolean", "default": false},
+    "action_authority": {"type": "boolean", "default": false},
+    "reversal": {"type": "string"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"trust": {"const": "untrusted"}}},
+      "then": {"properties": {"action_authority": {"const": false}}}
+    }
+  ],
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

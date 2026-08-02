@@ -1,0 +1,6 @@
+{
+  "baseline_id": "aion-deterministic-baseline-v1",
+  "expected_score": 1.0,
+  "expected_tasks_succeeded": 5,
+  "execution": "offline-simulation"
+}

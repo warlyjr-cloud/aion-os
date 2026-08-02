@@ -1,0 +1,69 @@
+name: Nix
+
+on:
+  pull_request:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - "pyproject.toml"
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/nix.yml"
+  push:
+    branches: [main]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+      - "pyproject.toml"
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/nix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flake-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-25.11
+      - name: Verify locked flake
+        run: nix flake metadata --no-update-lock-file
+      - name: Evaluate, build, and test checks
+        run: nix flake check --no-update-lock-file --print-build-logs
+
+  lab-vm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Build AION Lab VM
+        run: nix build .#aion-lab-vm --no-update-lock-file --print-build-logs
+
+  installer-iso:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+      - name: Build installer ISO
+        run: nix build .#aion-iso --no-update-lock-file --print-build-logs
