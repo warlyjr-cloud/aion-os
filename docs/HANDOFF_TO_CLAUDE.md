@@ -65,8 +65,9 @@ Gitleaks, Semgrep, OSV-Scanner, Syft, Grype, CodeQL e Trivy locais; `nix flake c
 
 - caminho local: `C:\Users\GABRIELA APSOL\Projects\aion-os`;
 - branch: `main`;
-- commit: será criado somente após a validação final; use `git rev-parse HEAD` para obter o identificador efetivo;
-- remote/URL pretendida: `https://github.com/warlyjr-cloud/aion-os`; não foi possível confirmar/criar o repositório remoto por falha de autenticação do GitHub CLI;
+- commit base do MVP: `9db3a15` (`bootstrap safe AION OS MVP`); use o comando abaixo para obter o HEAD após esta atualização de handoff;
+- o `.git` criado no worktree ficou read-only por política da sandbox. O commit validado usa metadados Git separados em `C:\Users\GABRIELA APSOL\Projects\aion-os.git`, com `core.worktree` apontando para este diretório;
+- remote configurado nesses metadados: `https://github.com/warlyjr-cloud/aion-os`; não foi possível confirmar/criar o repositório remoto por falha de autenticação do GitHub CLI;
 - nenhum push foi realizado.
 
 ## Arquivos protegidos que exigem revisão humana
@@ -92,6 +93,8 @@ Em ambiente Linux/WSL separado, executar `nix flake check` e depois VM build/boo
 
 ```powershell
 Set-Location "C:\Users\GABRIELA APSOL\Projects\aion-os"
+$env:GIT_DIR = "C:\Users\GABRIELA APSOL\Projects\aion-os.git"
+git status -sb
 uv sync --extra dev
 uv run ruff check .
 uv run pyright
