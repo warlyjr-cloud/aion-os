@@ -1,0 +1,13 @@
+{
+  "deterministic": true,
+  "results": [
+    {
+      "decision": "allow",
+      "reason": "policy and capability valid"
+    },
+    {
+      "decision": "allow",
+      "reason": "policy and capability valid"
+    }
+  ]
+}

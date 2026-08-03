@@ -1,0 +1,7 @@
+{
+  "status": "simulated",
+  "tests": [
+    "configuration",
+    "skill-contract"
+  ]
+}

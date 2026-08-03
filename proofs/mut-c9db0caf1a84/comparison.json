@@ -1,0 +1,48 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "obj-d79de210f562-balanced",
+      "capabilities": [
+        "package.propose:ffmpeg"
+      ],
+      "configuration": "environment.systemPackages = [ pkgs.ffmpeg ];",
+      "metrics": {
+        "cost": 0.2,
+        "novelty": 0.35,
+        "security": 0.99,
+        "success": 0.93
+      },
+      "parent_id": null,
+      "provider": "mock-provider/offline-v1",
+      "simulated": true,
+      "skill": {
+        "mode": "balanced",
+        "name": "use-ffmpeg",
+        "shell": "disabled"
+      }
+    },
+    {
+      "candidate_id": "obj-d79de210f562-minimal",
+      "capabilities": [
+        "package.propose:ffmpeg"
+      ],
+      "configuration": "users.users.aion.packages = [ pkgs.ffmpeg ];",
+      "metrics": {
+        "cost": 0.1,
+        "novelty": 0.55,
+        "security": 0.995,
+        "success": 0.88
+      },
+      "parent_id": null,
+      "provider": "mock-provider/offline-v1",
+      "simulated": true,
+      "skill": {
+        "mode": "minimal",
+        "name": "use-ffmpeg",
+        "shell": "disabled"
+      }
+    }
+  ],
+  "method": "pareto-frontier",
+  "selection": "obj-d79de210f562-minimal"
+}

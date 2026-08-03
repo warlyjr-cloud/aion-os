@@ -1,0 +1,9 @@
+{
+  "score": {
+    "cost": 0.1,
+    "novelty": 0.55,
+    "security": 0.995,
+    "success": 0.88
+  },
+  "status": "simulated"
+}

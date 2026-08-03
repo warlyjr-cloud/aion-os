@@ -1,0 +1,24 @@
+{
+  "council": {
+    "approved": true,
+    "proposer": "mock-provider/offline-v1",
+    "reason": "independent evaluation recorded",
+    "verifier": "deterministic-evaluator/v1"
+  },
+  "executor_results": [
+    {
+      "action_id": "action-mut-c9db0caf1a84-0",
+      "output": "validated simulation for package.propose on ffmpeg",
+      "simulated": true,
+      "status": "simulated"
+    },
+    {
+      "action_id": "action-mut-c9db0caf1a84-1",
+      "output": "validated simulation for package.propose on ffmpeg",
+      "simulated": true,
+      "status": "simulated"
+    }
+  ],
+  "generated_at": "2026-08-03T13:10:30.351755+00:00",
+  "provider": "mock-provider/offline-v1"
+}

@@ -1,0 +1,21 @@
+{
+  "candidate_id": "obj-3a9e1f89976c-minimal",
+  "capabilities": [
+    "package.propose:ffmpeg"
+  ],
+  "configuration": "users.users.aion.packages = [ pkgs.ffmpeg ];",
+  "metrics": {
+    "cost": 0.1,
+    "novelty": 0.55,
+    "security": 0.995,
+    "success": 0.88
+  },
+  "parent_id": null,
+  "provider": "mock-provider/offline-v1",
+  "simulated": true,
+  "skill": {
+    "mode": "minimal",
+    "name": "use-ffmpeg",
+    "shell": "disabled"
+  }
+}
