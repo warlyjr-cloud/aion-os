@@ -30,7 +30,16 @@ class EvolutionEngine:
         self.state_root.mkdir(parents=True, exist_ok=True)
         self.mutations = MutationStore(self.state_root / "mutations")
         self.audit = AuditLog(self.state_root / "audit.jsonl")
-        self.provider = provider or MockProvider()
+        if provider is not None:
+            self.provider = provider
+        else:
+            import os
+            if os.getenv("ANTHROPIC_API_KEY"):
+                from providers.llm import AnthropicProvider
+                self.provider = AnthropicProvider()
+            else:
+                self.provider = MockProvider()
+                
         self.proofs = ProofEngine(self.project_root / "proofs")
         self.generations_root = self.state_root / "generations"
         self.generations_root.mkdir(parents=True, exist_ok=True)
@@ -112,11 +121,14 @@ class EvolutionEngine:
         executor = SafeExecutor()
         policy_results: list[dict[str, str]] = []
         execution_results: list[dict[str, object]] = []
-        for index, _candidate in enumerate(candidates):
+        for index, candidate in enumerate(candidates):
+            cap = candidate.capabilities[0] if candidate.capabilities else capability
+            action_type = cap.split(":", 1)[0]
+            target = cap.split(":", 1)[1] if ":" in cap else package
             action = SemanticAction(
                 action_id=f"action-{mutation_id}-{index}",
-                action_type="package.propose",
-                target=package,
+                action_type=action_type,
+                target=target,
                 reason="validated capability gap",
                 origin=self.provider.identity,
                 objective_id=objective_id,

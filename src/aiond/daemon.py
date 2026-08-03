@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 
 from audit import AuditLog
+from vek.engine import EvolutionEngine
 
 
 def _project_root() -> Path:
@@ -18,11 +19,32 @@ def run_once(project_root: Path) -> dict[str, object]:
     state_root = project_root / ".aion-state"
     log = AuditLog(state_root / "audit.jsonl")
     stopped = (state_root / "STOP").exists()
+    
+    # Process Inbox
+    inbox_dir = state_root / "inbox"
+    archive_dir = state_root / "archive"
+    inbox_dir.mkdir(parents=True, exist_ok=True)
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    
+    processed_intents = []
+    if not stopped:
+        for intent_file in inbox_dir.glob("*.txt"):
+            objective = intent_file.read_text(encoding="utf-8").strip()
+            if objective:
+                try:
+                    engine = EvolutionEngine(project_root)
+                    record = engine.plan(objective)
+                    processed_intents.append({"file": intent_file.name, "status": "planned", "mutation_id": record.mutation_id})
+                except Exception as e:
+                    processed_intents.append({"file": intent_file.name, "status": "error", "error": str(e)})
+            intent_file.rename(archive_dir / intent_file.name)
+            
     return {
         "service": "aiond",
         "healthy": not stopped,
-        "mode": "simulation-only",
+        "mode": "simulation-only" if os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation" else "real",
         "audit_valid": log.verify(),
+        "processed_intents": processed_intents,
     }
 
 
