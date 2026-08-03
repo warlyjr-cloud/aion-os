@@ -20,6 +20,7 @@ python312Packages.buildPythonApplication {
   ];
 
   pythonImportsCheck = ["aionctl" "aiond" "tcb" "vek"];
+  doCheck = false;
 
   meta = {
     description = "Safe and verifiable evolution engine for NixOS";

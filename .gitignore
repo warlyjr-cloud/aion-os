@@ -20,3 +20,5 @@ result-*
 .env
 .env.*
 .claude/audit/
+.pytest_temp/
+proofs/mut-*/

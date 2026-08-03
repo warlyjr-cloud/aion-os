@@ -1,5 +1,5 @@
 {lib, ...}: {
-  boot.readOnlyNixStore = true;
+
   documentation.enable = false;
   networking.useDHCP = lib.mkDefault true;
   nix.settings = {

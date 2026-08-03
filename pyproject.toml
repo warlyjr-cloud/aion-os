@@ -11,8 +11,8 @@ requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 authors = [{ name = "AION contributors" }]
 dependencies = [
-  "pydantic==2.13.4",
-  "typer==0.27.0",
+  "pydantic>=2.11.7",
+  "typer>=0.19.2",
 ]
 
 [project.optional-dependencies]

@@ -34,6 +34,8 @@ class EvolutionEngine:
         self.proofs = ProofEngine(self.project_root / "proofs")
         self.generations_root = self.state_root / "generations"
         self.generations_root.mkdir(parents=True, exist_ok=True)
+        import os
+        self.simulated = os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation"
 
     def plan(self, objective: str) -> MutationRecord:
         normalized = " ".join(objective.split())
@@ -229,7 +231,7 @@ class EvolutionEngine:
             skills=[selected.skill["name"]],
             configuration_hash=configuration_hash,
             mutation_id=mutation_id,
-            simulated=True,
+            simulated=self.simulated,
         )
         genome.export(self.generations_root / f"{generation_id}.json")
         (self.generations_root / "current").write_text(generation_id + "\n", encoding="utf-8")
@@ -242,15 +244,15 @@ class EvolutionEngine:
             {
                 "status": "monitoring",
                 "generation_id": generation_id,
-                "simulated": True,
-                "host_modified": False,
+                "simulated": self.simulated,
+                "host_modified": not self.simulated,
             },
         )
         self.audit.append(
-            "generation.promoted_simulation",
+            "generation.promoted_simulation" if self.simulated else "generation.promoted",
             actor="tcb-executor",
             mutation_id=mutation_id,
-            details={"generation_id": generation_id, "simulated": True},
+            details={"generation_id": generation_id, "simulated": self.simulated},
         )
         return record
 
@@ -276,15 +278,15 @@ class EvolutionEngine:
                 "status": "rolled_back",
                 "generation_id": record.generation_id,
                 "restored_generation_id": genome.parent_generation_id,
-                "simulated": True,
-                "host_modified": False,
+                "simulated": self.simulated,
+                "host_modified": not self.simulated,
             },
         )
         self.audit.append(
-            "generation.rolled_back_simulation",
+            "generation.rolled_back_simulation" if self.simulated else "generation.rolled_back",
             actor="tcb-executor",
             mutation_id=record.mutation_id,
-            details={"restored": genome.parent_generation_id, "simulated": True},
+            details={"restored": genome.parent_generation_id, "simulated": self.simulated},
         )
         return record
 

@@ -26,12 +26,12 @@ dev = [
 requires-dist = [
     { name = "hypothesis", marker = "extra == 'dev'", specifier = "==6.165.0" },
     { name = "jsonschema", marker = "extra == 'dev'", specifier = "==4.26.0" },
-    { name = "pydantic", specifier = "==2.13.4" },
+    { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pyright", marker = "extra == 'dev'", specifier = "==1.1.411" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.16.1" },
-    { name = "typer", specifier = "==0.27.0" },
+    { name = "typer", specifier = ">=0.19.2" },
     { name = "uv", marker = "extra == 'dev'", specifier = "==0.12.1" },
 ]
 provides-extras = ["dev"]

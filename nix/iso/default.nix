@@ -11,7 +11,7 @@
   ];
 
   nixpkgs.hostPlatform = "x86_64-linux";
-  isoImage.isoName = "aion-os-${config.system.nixos.label}-${pkgs.stdenv.hostPlatform.system}.iso";
+  image.fileName = "aion-os-${config.system.nixos.label}-${pkgs.stdenv.hostPlatform.system}.iso";
   networking.hostName = "aion-live";
   networking.firewall.enable = true;
   services.openssh.enable = false;
