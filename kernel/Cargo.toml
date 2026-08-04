@@ -2,6 +2,7 @@
 name = "aion_kernel"
 version = "0.1.0"
 edition = "2021"
+description = "AION OS Bare-Metal Microkernel. The foundation of the global DePIN supercomputer."
 
 [dependencies]
 # Dependências agnósticas de plataforma podem ir aqui
