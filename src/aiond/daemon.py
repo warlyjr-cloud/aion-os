@@ -9,6 +9,7 @@ from pathlib import Path
 
 from audit import AuditLog
 from vek.engine import EvolutionEngine
+from immune_memory.monitor import SystemMonitor
 
 
 def _project_root() -> Path:
@@ -25,6 +26,10 @@ def run_once(project_root: Path) -> dict[str, object]:
     archive_dir = state_root / "archive"
     inbox_dir.mkdir(parents=True, exist_ok=True)
     archive_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Process Immune System Monitoring
+    monitor = SystemMonitor(project_root)
+    immune_reaction = monitor.check_health_and_react()
     
     processed_intents = []
     if not stopped:
@@ -45,6 +50,7 @@ def run_once(project_root: Path) -> dict[str, object]:
         "mode": "simulation-only" if os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation" else "real",
         "audit_valid": log.verify(),
         "processed_intents": processed_intents,
+        "immune_reaction": immune_reaction,
     }
 
 

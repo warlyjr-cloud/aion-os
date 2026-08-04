@@ -155,6 +155,7 @@ class EvolutionEngine:
             verifier="deterministic-evaluator/v1",
             critical=True,
             accepted=True,
+            candidate_config=selected.configuration,
         )
         if not council.approved:
             record.transition(MutationState.ARCHIVED)
