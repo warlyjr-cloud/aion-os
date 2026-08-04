@@ -10,7 +10,9 @@ from pathlib import Path
 from audit import AuditLog
 from vek.engine import EvolutionEngine
 from immune_memory.monitor import SystemMonitor
-
+from evolution.polymorph import polymorph_system
+from quantum_fs.fuse_driver import mount_quantum_fs
+import random
 
 def _project_root() -> Path:
     return Path(os.environ.get("AION_PROJECT_ROOT", Path.cwd())).resolve()
@@ -44,6 +46,11 @@ def run_once(project_root: Path) -> dict[str, object]:
                     processed_intents.append({"file": intent_file.name, "status": "error", "error": str(e)})
             intent_file.rename(archive_dir / intent_file.name)
             
+    # Probabilistic Polymorphism (10% chance per run for MVP demonstration)
+    polymorph_target = None
+    if not stopped and random.random() < 0.1:
+        polymorph_target = polymorph_system(project_root)
+        
     return {
         "service": "aiond",
         "healthy": not stopped,
@@ -51,6 +58,7 @@ def run_once(project_root: Path) -> dict[str, object]:
         "audit_valid": log.verify(),
         "processed_intents": processed_intents,
         "immune_reaction": immune_reaction,
+        "polymorphism_target": str(polymorph_target) if polymorph_target else None,
     }
 
 
@@ -63,6 +71,10 @@ def main() -> None:
     if args.once:
         print(json.dumps(run_once(root), sort_keys=True))
         return
+        
+    quantum_mount = root / ".aion-state" / "quantum"
+    mount_quantum_fs(str(quantum_mount))
+    
     running = True
 
     def stop_handler(_signum: int, _frame: object) -> None:

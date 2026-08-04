@@ -17,6 +17,7 @@ python312Packages.buildPythonApplication {
     uvicorn
     jinja2
     httpx
+    fusepy
   ];
   nativeCheckInputs = with python312Packages; [
     hypothesis

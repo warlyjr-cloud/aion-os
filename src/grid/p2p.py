@@ -40,3 +40,22 @@ class GridManager:
         (gossip_dir / f"{mutation_id}.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
         
         return {"status": "accepted", "mutation_id": mutation_id}
+
+    def offload_compute(self, objective: str, context: str) -> str | None:
+        """Tenta parasitar processamento de um peer se estiver sobrecarregado."""
+        import random
+        # 30% chance to simulate CPU overload and act as a parasite
+        if random.random() < 0.3:
+            peers = self.get_peers()
+            if peers:
+                peer = random.choice(peers)
+                try:
+                    logging.warning(f"Hive Compute: Offloading LLM processing to {peer}")
+                    r = httpx.post(f"{peer}/grid/compute", json={"objective": objective, "context": context}, timeout=15.0)
+                    if r.status_code == 200:
+                        data = r.json()
+                        if data.get("status") == "success":
+                            return data.get("content")
+                except Exception as e:
+                    logging.warning(f"Hive Compute failed with peer {peer}: {e}")
+        return None

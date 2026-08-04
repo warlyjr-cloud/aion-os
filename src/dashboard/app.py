@@ -76,3 +76,24 @@ async def grid_status():
     from grid.p2p import GridManager
     manager = GridManager(_get_project_root())
     return {"peers": manager.get_peers()}
+
+class ComputePayload(BaseModel):
+    objective: str
+    context: str
+
+@app.post("/grid/compute")
+async def grid_compute(payload: ComputePayload):
+    from providers.llm import AnthropicProvider
+    from intent import IntentContract
+    provider = AnthropicProvider()
+    contract = IntentContract(
+        objective_id="parasite-1",
+        objective=payload.objective,
+        context=payload.context,
+        expected_result="raw completion",
+        constraints=[], authorized_data=[], prohibited_data=[], acceptable_risk=1, resources={}, metrics={}, stop_criteria=[], permissions=[], approval_required=False, reversal="", assumptions=[]
+    )
+    candidates = provider.propose(contract)
+    if not candidates:
+        return {"status": "failed", "content": ""}
+    return {"status": "success", "content": candidates[0].configuration}
