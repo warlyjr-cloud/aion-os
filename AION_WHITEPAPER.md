@@ -17,7 +17,7 @@ Modern operating systems (Linux, Windows) were designed for an era of isolated c
 ## 2. The Microkernel Architecture (Ring 0)
 AION OS abandons the monolithic Linux kernel. The lowest level of execution is written entirely in `no_std` Rust.
 - **Memory Safety:** By leveraging Rust's ownership model, the kernel eliminates buffer overflows and Use-After-Free vulnerabilities natively.
-- **SGX Enclaves:** The central routing logic (The Oracle) executes within Intel SGX / AMD SEV enclaves. Memory is encrypted at the hardware level, preventing unauthorized reading even by physical memory dumping.
+- **SGX Enclaves:** The decentralized enclave state execution logic executes within Intel SGX / AMD SEV enclaves. Memory is encrypted at the hardware level, preventing unauthorized reading even by physical memory dumping.
 - **ZKP Module Auditing:** Kernel modules and hardware drivers are not statically compiled. They are synthesized JIT (Just-In-Time) by the AI Daemon. Before a driver is loaded into Ring 0, the daemon must submit a Zero-Knowledge Proof mathematically guaranteeing that the driver does not contain infinite loops or illegal memory accesses.
 - **Lattice-Based PQC:** The base communication layer utilizes Post-Quantum Cryptography (Lattice-based constructs) to mathematically shield the network from future Quantum Processing Units (QPUs).
 
