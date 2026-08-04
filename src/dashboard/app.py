@@ -50,9 +50,9 @@ async def index(request: Request):
     history = [m for m in mutations if m.get("state") != "awaiting_approval"]
     
     return templates.TemplateResponse(
-        "index.html", 
-        {
-            "request": request, 
+        request=request,
+        name="index.html", 
+        context={
             "audit_logs": audit_logs[-50:], # Show last 50
             "pending": pending,
             "history": history
