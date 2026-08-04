@@ -55,5 +55,6 @@ aion-cli start
 For a deep dive into the mathematical and cryptographic foundations of the AION Grid, please read the [AION Whitepaper](AION_WHITEPAPER.md).
 
 ## License
-AION OS is released under the **Apache License 2.0**. See the `LICENSE` file for details.
-*(Note: Enterprise orchestration and fleet management components are subject to separate commercial licensing).*
+AION OS is released under the **Business Source License 1.1 (BSL)**. 
+See the `LICENSE` file for details.
+*(Note: You may view, download, and study the code for free. However, running a commercial decentralized infrastructure network with this software requires a commercial license from AION Labs).*

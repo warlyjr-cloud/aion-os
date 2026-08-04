@@ -1,0 +1,44 @@
+name: Build and Release AION Microkernel
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers when a version tag is pushed (e.g., v0.1.0)
+
+jobs:
+  build-kernel:
+    name: Build Rust Bare-Metal Kernel
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Nightly
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Build x86_64 Kernel
+        run: |
+          cd kernel
+          cargo build --target x86_64-aion.json --release
+
+      - name: Build ARM64 Kernel
+        run: |
+          cd kernel
+          cargo build --target aarch64-aion.json --release
+
+      - name: Create Release Archive
+        run: |
+          mkdir -p aion-kernel-release
+          cp kernel/target/x86_64-aion/release/aion_kernel aion-kernel-release/aion_kernel_x86_64.bin
+          cp kernel/target/aarch64-aion/release/aion_kernel aion-kernel-release/aion_kernel_aarch64.bin
+          tar -czvf aion-kernel-release.tar.gz aion-kernel-release/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: aion-kernel-release.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

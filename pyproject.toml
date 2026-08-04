@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Safe, verifiable, and reproducible evolution engine for NixOS"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Apache-2.0" }
+license = { text = "BUSL-1.1" }
 authors = [{ name = "AION contributors" }]
 dependencies = [
   "pydantic>=2.11.7",

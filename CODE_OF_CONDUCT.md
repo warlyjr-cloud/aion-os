@@ -1,25 +1,15 @@
-# Código de Conduta
+# The AION Code of Conduct
 
-Este projeto adota o **Contributor Covenant, versão 2.1**.
+Welcome to the AION OS core development grid.
 
-## Nosso compromisso
+## 1. The Ethos (Cypherpunk & Community)
+We are building the largest decentralized physical infrastructure network in the world. We demand two things from contributors:
+1. **Mathematical Excellence**: Code submitted to the Microkernel or the P2P Daemon must be mathematically sound, memory-safe (in Rust), and typed (in Python). We respect zero-knowledge proofs over opinions.
+2. **Mutual Respect**: We are a collective of engineers, not politicians. Ad hominem attacks, harassment, or toxic behavior will result in a permanent ban from the repository. Critique the code, not the coder.
 
-Comprometemo-nos a tornar a participação uma experiência livre de assédio para todas as pessoas, independentemente de idade, porte, deficiência, etnia, características sexuais, identidade e expressão de gênero, experiência, educação, condição socioeconômica, nacionalidade, aparência, raça, casta, cor, religião ou identidade e orientação sexual.
+## 2. Standards of Contribution
+- **Show me the math**: If you propose an architecture change, prove it works.
+- **Privacy is absolute**: Do not submit code that tracks, telemetry-mines, or violates the zero-knowledge nature of the OS.
 
-## Comportamento esperado
-
-- demonstrar empatia e respeito;
-- aceitar feedback técnico fundamentado;
-- assumir responsabilidade por impactos;
-- priorizar segurança, privacidade e transparência;
-- distinguir fatos, hipóteses e resultados não verificados.
-
-Não são aceitos assédio, intimidação, insultos, sexualização indesejada, exposição de informações privadas, sabotagem de avaliação ou uso do projeto para prejudicar terceiros.
-
-## Aplicação
-
-Comportamentos inadequados podem ser reportados privadamente aos mantenedores da organização `warlyjr-cloud`. A equipe poderá corrigir, advertir, suspender ou remover participantes de acordo com contexto, gravidade e reincidência, preservando confidencialidade quando possível.
-
-## Atribuição
-
-Adaptado do [Contributor Covenant 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/), disponível sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+## 3. Enforcement
+Violations of this code of conduct can be reported to `security@aion-os.com`. The AION Labs core team holds the final say on all repository interactions.
