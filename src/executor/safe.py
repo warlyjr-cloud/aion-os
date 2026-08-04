@@ -22,6 +22,7 @@ class SafeExecutor:
             "package.propose",
             "file.propose",
             "file.patch",
+            "python.patch",
             "service.configure",
             "generation.build",
             "benchmark.run",
@@ -38,7 +39,7 @@ class SafeExecutor:
         runtime_mode = os.getenv("AION_RUNTIME_MODE", "simulation")
         simulated = runtime_mode == "simulation"
         
-        if not simulated and action.action_type in ("package.propose", "file.patch", "service.configure"):
+        if not simulated and action.action_type in ("package.propose", "file.patch", "python.patch", "service.configure"):
             # Real build via WSL Nix (as an example of real execution)
             try:
                 if action.action_type == "package.propose":
@@ -49,8 +50,16 @@ class SafeExecutor:
                         text=True,
                         check=True,
                     )
+                elif action.action_type == "python.patch":
+                    # Self-testing via pytest for metamorphic changes
+                    result = subprocess.run(
+                        ["uv", "run", "pytest"],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
                 else:
-                    # For file.patch and service.configure, we assume they are valid if syntactically correct
+                    # For file.patch, python.patch, and service.configure, we assume they are valid if syntactically correct
                     # Full realization requires nixos-rebuild, which is outside the scope of single action checks
                     result = subprocess.CompletedProcess(args=[], returncode=0, stdout="verified successfully")
                     

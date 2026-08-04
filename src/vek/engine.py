@@ -58,8 +58,16 @@ class EvolutionEngine:
             if not unicodedata.combining(character)
         )
         video_goal = "video" in searchable_objective
-        package = "ffmpeg" if video_goal else "generic-tool"
-        capability = f"package.propose:{package}"
+        metamorphic_goal = "aion" in searchable_objective or "daemon" in searchable_objective or "engine" in searchable_objective or "grid" in searchable_objective or "desktop" in searchable_objective
+        if metamorphic_goal:
+            package = "aion-os"
+            capability = "python.patch:aion-os"
+        elif video_goal:
+            package = "ffmpeg"
+            capability = "package.propose:ffmpeg"
+        else:
+            package = "generic-tool"
+            capability = "package.propose:generic-tool"
         contract = IntentContract(
             objective_id=objective_id,
             objective=normalized,

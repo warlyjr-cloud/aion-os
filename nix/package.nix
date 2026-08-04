@@ -16,6 +16,7 @@ python312Packages.buildPythonApplication {
     fastapi
     uvicorn
     jinja2
+    httpx
   ];
   nativeCheckInputs = with python312Packages; [
     hypothesis

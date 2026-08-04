@@ -6,6 +6,7 @@
 }: let
   cfg = config.services.aion;
 in {
+  imports = [ ./desktop.nix ];
   options.services.aion = {
     enable = lib.mkEnableOption "AION evolution engine";
 

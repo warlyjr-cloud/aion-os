@@ -18,6 +18,7 @@
     enable = true;
     package = aionPackage;
     simulationOnly = true;
+    desktop.enable = true;
   };
 
   users.users.aion-lab = {
@@ -29,7 +30,7 @@
   virtualisation = {
     cores = 2;
     diskSize = 8192;
-    graphics = false;
+    graphics = true;
     memorySize = 2048;
   };
 

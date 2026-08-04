@@ -4,6 +4,8 @@ from typing import List, Dict, Any
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from typing import Dict, Any
 
 app = FastAPI(title="AION OS Dashboard")
 dashboard_dir = Path(__file__).parent
@@ -58,3 +60,19 @@ async def index(request: Request):
             "history": history
         }
     )
+
+class GossipPayload(BaseModel):
+    mutation_id: str
+    proof: Dict[str, Any]
+
+@app.post("/grid/gossip")
+async def grid_gossip(payload: GossipPayload):
+    from grid.p2p import GridManager
+    manager = GridManager(_get_project_root())
+    return manager.receive_gossip(payload.model_dump())
+
+@app.get("/grid/status")
+async def grid_status():
+    from grid.p2p import GridManager
+    manager = GridManager(_get_project_root())
+    return {"peers": manager.get_peers()}

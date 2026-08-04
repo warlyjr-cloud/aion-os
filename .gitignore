@@ -22,3 +22,5 @@ result-*
 .claude/audit/
 .pytest_temp/
 proofs/mut-*/
+*.iso
+*.qcow2
