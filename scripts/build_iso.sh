@@ -15,8 +15,8 @@ PROJECT_ROOT=$(pwd)
 echo "Project Root: $PROJECT_ROOT"
 
 # Prepara a ISO via flakes
-echo "Executando flake build para nixosConfigurations.iso..."
-nix build .#nixosConfigurations.iso.config.system.build.isoImage --print-build-logs
+echo "Executando flake build para aion-iso..."
+nix build .#nixosConfigurations.aion-iso.config.system.build.isoImage --print-build-logs
 
 # Copia o artefato gerado para o root
 echo "Copiando a imagem gerada..."
