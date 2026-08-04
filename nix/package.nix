@@ -12,6 +12,10 @@ python312Packages.buildPythonApplication {
   dependencies = with python312Packages; [
     pydantic
     typer
+    anthropic
+    fastapi
+    uvicorn
+    jinja2
   ];
   nativeCheckInputs = with python312Packages; [
     hypothesis
