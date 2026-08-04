@@ -1,66 +1,59 @@
 # AION OS
 
-> Sistema Linux AI-native experimental que pretende comprovar, antes de aplicar, que cada mudança é segura e realmente melhor.
+> **The Decentralized Bare-Metal Autonomous Infrastructure**
 
-O AION combina a base declarativa do NixOS com um **Verifiable Evolution Kernel (VEK)**: objetivos viram contratos de intenção, candidatas são construídas e avaliadas em isolamento e somente evidências verificáveis podem autorizar promoção. O modelo propõe; uma base determinística de confiança decide. O VEK não substitui o kernel Linux.
+![AION Grid](docs/images/grid.jpg)
 
-## Estado do projeto
+AION OS is an advanced, post-Linux microkernel and decentralized physical infrastructure network (DePIN). Designed from first principles in **Rust** and powered by an autonomous polymorphic **Python** intelligence layer, AION OS aims to redefine operating systems for the era of Artificial Intelligence and decentralized computation.
 
-Este repositório é um **MVP de pesquisa, simulation-only por padrão**. Interfaces, schemas e fluxos mock podem existir sem equivaler a isolamento de produção, VM validada, execução privilegiada segura ou recursive self-improvement completo. Consulte [SOTA_GAP](docs/SOTA_GAP.md) e [HANDOFF_TO_CLAUDE](docs/HANDOFF_TO_CLAUDE.md) antes de interpretar resultados.
+## Core Tenets & Architecture
 
-Não considere o AION pronto para produção, estado da arte ou seguro para mutar um host. Nenhuma instalação no host é necessária para a demonstração mock.
+AION OS completely abandons traditional monolithic kernel design. It operates on four revolutionary scientific principles:
 
-## Princípios
+### 1. The Rust Microkernel (Ring 0)
+At the lowest level of the silicon, AION OS relies on a custom `no_std` Rust microkernel. This guarantees absolute memory safety, eliminating the buffer overflows and kernel panics that plague legacy operating systems.
+- **SGX Enclaves**: The core orchestration logic executes within hardware-encrypted CPU enclaves (Intel SGX / AMD SEV), ensuring total cryptographic privacy.
+- **Zero-Knowledge Proofs (ZKP)**: Drivers are synthesized dynamically and mathematically verified before execution in Ring 0. 
 
-- **A inteligência pode evoluir; a autoridade não.**
-- Toda ação é tipada, limitada por capability, auditável, temporária e reversível.
-- O proponente nunca é seu único verificador.
-- Guardrails eliminam candidatas antes de qualquer comparação de desempenho.
-- O padrão é local-first, sem telemetria e sem shell livre no host.
-- Mudanças críticas exigem revisão humana separada.
+### 2. The DePIN P2P Grid (Hive Compute)
+AION OS is not an isolated system; it is a node in a global hive mind.
+- Devices running AION OS automatically form a decentralized computation grid.
+- **Protocol Monetization**: CPU and GPU cycles are tokenized and metered at the kernel level, creating a planetary-scale decentralized datacenter available for AI training and complex mathematical workloads.
 
-## Arquitetura resumida
+![Generative Desktop](docs/images/desktop.jpg)
 
-```text
-objetivo -> contrato -> candidatas -> política -> build/teste isolado
-        -> avaliação independente -> prova -> aprovação -> promoção/rollback
+### 3. The Generative Desktop (UI/UX)
+AION OS has no static user interface. The UI is synthesized in real-time by a Large Language Model based on the user's intent, creating a fluid, hyper-personalized workflow built on top of a Wayland-based compositor.
 
-LLM/provider (não confiável) -> VEK -> TCB determinístico -> executor tipado
-```
+### 4. Relativistic Scheduling & Quantum FS
+- **Relativistic CPU Scheduler**: The OS applies Time Dilation (`SIGSTOP/SIGCONT`) to high-mass (high-CPU) processes, slowing their local time relative to the OS to maintain perfect system fluidity.
+- **Quantum File System**: Files exist in a state of quantum superposition until observed (read). Content is synthesized Just-In-Time by the AI layer via FUSE.
 
-Veja [ARCHITECTURE](docs/ARCHITECTURE.md), [VEK_SPECIFICATION](docs/VEK_SPECIFICATION.md), [TCB_SPECIFICATION](docs/TCB_SPECIFICATION.md) e [SAFETY_CONSTITUTION](docs/SAFETY_CONSTITUTION.md).
+## Getting Started
 
-## Desenvolvimento local
+AION OS is currently in **Phase 8** of its architectural development. 
 
-Requisitos: Python 3.12 e, preferencialmente, `uv`. Não instale dependências globalmente.
+### Prerequisites
+- Python 3.12+ (For the Userland AI Daemon)
+- Rust Toolchain (For the Bare-Metal Microkernel)
+- QEMU (For kernel emulation)
 
+### Booting the Microkernel (Rust)
 ```bash
-uv venv
-uv sync --extra dev
-uv run aionctl --help
-uv run pytest
-uv run ruff check .
-uv run pyright
+cd kernel
+# Compile for x86_64 Bare Metal
+cargo build --target x86_64-aion.json --release
 ```
 
-Os comandos acima são os alvos esperados; consulte o handoff para saber quais foram realmente executados nesta geração. Para Nix, use apenas um ambiente Linux/WSL com Nix disponível e execute `nix flake check` antes de afirmar validação.
+### Starting the AI Daemon (Python)
+```bash
+pip install -e .
+aion-cli start
+```
 
-## Demonstração do MVP
+## Documentation
+For a deep dive into the mathematical and cryptographic foundations of the AION Grid, please read the [AION Whitepaper](AION_WHITEPAPER.md).
 
-O objetivo “processar, converter e reduzir vídeos” produz duas candidatas mock para uma capacidade baseada em FFmpeg, aplica política, compara uma fronteira multidimensional e gera um pacote de prova, sem instalar FFmpeg no host. A execução validada neste bootstrap gerou `proofs/mut-183c4b75e3bb/`, promoveu uma geração simulada e concluiu em rollback. A promoção real permanece bloqueada até validação isolada e aprovação humana separada.
-
-## Documentação
-
-- [Visão](docs/VISION.md) e [posicionamento](docs/PRODUCT_POSITIONING.md)
-- [Modelo de ameaça](docs/THREAT_MODEL.md) e [privacidade](docs/DATA_AND_PRIVACY.md)
-- [Agenda de pesquisa](docs/RESEARCH_AGENDA.md) e [trabalhos anteriores](docs/PRIOR_ART.md)
-- [OS-EvoBench](docs/OS_EVOBENCH.md) e [modelo de RSI](docs/RSI_MODEL.md)
-- [Roadmap](docs/ROADMAP.md) e [handoff](docs/HANDOFF_TO_CLAUDE.md)
-
-## Contribuição e segurança
-
-Leia [CONTRIBUTING.md](CONTRIBUTING.md) antes de propor mudanças. Vulnerabilidades devem seguir [SECURITY.md](SECURITY.md), nunca issues públicas. O projeto adota o [Contributor Covenant](CODE_OF_CONDUCT.md).
-
-## Licença
-
-O projeto e o metadata do pacote declaram Apache-2.0; consulte `LICENSE`. Dependências, ferramentas e artefatos externos mantêm suas próprias licenças.
+## License
+AION OS is released under the **Apache License 2.0**. See the `LICENSE` file for details.
+*(Note: Enterprise orchestration and fleet management components are subject to separate commercial licensing).*

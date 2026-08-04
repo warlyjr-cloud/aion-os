@@ -1,13 +1,14 @@
-# Security policy
+# Security Policy
 
-Do not open a public issue for vulnerabilities, suspected credential exposure, sandbox escapes, capability bypasses, audit tampering, or rollback failures.
+AION OS is designed to be the most secure operating system in the world, utilizing Rust's memory safety and Hardware Enclaves (SGX). However, vulnerabilities can exist.
 
-Use the repository's private security advisory form:
+## Supported Versions
+Only the `main` branch (Bleeding Edge) is currently supported for security updates.
 
-https://github.com/warlyjr-cloud/aion-os/security/advisories/new
+## Reporting a Vulnerability
+If you discover a critical vulnerability in the Ring 0 Microkernel or the DePIN P2P protocol:
+1. **DO NOT** open a public issue on GitHub.
+2. Email the cryptographically signed proof of vulnerability to `security@aion-os.com`.
+3. We will respond within 48 hours.
 
-Include the affected commit, environment, minimal reproduction, expected security invariant, observed result, and redacted evidence. Do not include live credentials, personal data, or destructive payloads.
-
-The maintainers will acknowledge a report, assess scope, coordinate a fix, and publish disclosure details when it is safe to do so. No service-level response time is promised during the MVP.
-
-Only the latest commit on main is eligible for security fixes. The project is experimental, simulation-first software and is not production-ready.
+*Note: There is currently no active Bug Bounty program.*

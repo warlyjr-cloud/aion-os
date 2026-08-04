@@ -13,13 +13,13 @@ authors = [{ name = "AION contributors" }]
 dependencies = [
   "pydantic>=2.11.7",
   "typer>=0.19.2",
-  "anthropic>=0.34.1",
-  "fastapi>=0.111.0",
-  "uvicorn>=0.30.1",
-  "jinja2>=3.1.4",
-  "httpx>=0.27.0",
-  "fusepy>=3.0.1",
-  "psutil>=6.0.0",
+  "fastapi>=0.100.0",
+  "uvicorn>=0.23.0",
+  "jinja2>=3.1.2",
+  "httpx>=0.24.1",
+  "anthropic>=0.30.0",
+  "fusepy==3.0.1",
+  "psutil==7.2.2",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +36,7 @@ dev = [
 [project.scripts]
 aionctl = "aionctl.cli:app"
 aiond = "aiond.daemon:main"
+aion-cli = "cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
