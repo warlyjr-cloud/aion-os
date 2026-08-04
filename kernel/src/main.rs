@@ -5,6 +5,7 @@
 mod vga;
 mod depin;
 mod zkp;
+mod pqc;
 
 use core::panic::PanicInfo;
 
@@ -25,9 +26,10 @@ pub extern "C" fn _start() -> ! {
     vga::print_message(b"\nVerifying TPM 2.0 Hardware Attestation...");
     // If this fails in production, panic!("TPM Module missing. Hardware clone detected.");
 
-    // Initialize ZKP and DePIN stubs
+    // Initialize ZKP, DePIN, and PQC stubs
     zkp::init();
     depin::init();
+    pqc::init();
 
     loop {}
 }

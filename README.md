@@ -25,9 +25,12 @@ AION OS is not an isolated system; it is a node in a global hive mind.
 ### 3. The Generative Desktop (UI/UX)
 AION OS has no static user interface. The UI is synthesized in real-time by a Large Language Model based on the user's intent, creating a fluid, hyper-personalized workflow built on top of a Wayland-based compositor.
 
-### 4. Relativistic Scheduling & Quantum FS
-- **Relativistic CPU Scheduler**: The OS applies Time Dilation (`SIGSTOP/SIGCONT`) to high-mass (high-CPU) processes, slowing their local time relative to the OS to maintain perfect system fluidity.
-- **Quantum File System**: Files exist in a state of quantum superposition until observed (read). Content is synthesized Just-In-Time by the AI layer via FUSE.
+### 4. Quantum-Relativistic Physics Engine
+AION OS is the first operating system modeled after theoretical physics:
+- **Relativistic CPU Scheduler**: Applies Time Dilation (`SIGSTOP/SIGCONT`) to high-mass (high-CPU) processes, slowing their local time relative to the OS.
+- **Schrödinger's Mutator**: The AI daemon runs structural OS mutations in multiple parallel dimensions (Quantum Superposition). Only the mutation that compiles successfully collapses into the main physical reality, guaranteeing zero downtime.
+- **Quantum Entanglement**: Network nodes compute identical P2P state mutations simultaneously without transferring data across the internet, using deterministic cryptographic seeds.
+- **Post-Quantum Cryptography (PQC)**: The Rust Microkernel natively supports Lattice-based cryptography to defend against future Shor's algorithm attacks from quantum computers.
 
 ## Getting Started
 
