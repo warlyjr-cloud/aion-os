@@ -37,6 +37,21 @@ class GridManager:
             
         gossip_dir = self.state_root / "gossip"
         gossip_dir.mkdir(parents=True, exist_ok=True)
+        import random
+        # Batalha de Linhas do Tempo (Multiverse Battle)
+        # Se 10% de chance, simular que uma evolução concorrente já existia no mesmo 'timestamp relativo'
+        if random.random() < 0.1:
+            logging.warning(f"[\u2622\ufe0f MULTIVERSO] Colisão Relativística! Mutação {mutation_id} encontrou uma linha do tempo concorrente.")
+            # Resolve the battle by fitness (simulated by random int for MVP)
+            local_fitness = random.randint(1, 100)
+            alien_fitness = random.randint(1, 100)
+            if local_fitness > alien_fitness:
+                logging.warning(f"[\u2622\ufe0f MULTIVERSO] O Universo Local venceu a batalha (Fitness {local_fitness} > {alien_fitness}). Mutação {mutation_id} apagada da existência.")
+                return {"status": "rejected", "reason": "timeline_battle_lost"}
+            else:
+                logging.warning(f"[\u2622\ufe0f MULTIVERSO] O Universo Estrangeiro venceu (Fitness {alien_fitness} > {local_fitness}). A linha do tempo atual será sobreposta.")
+                
+        # Write to archive
         (gossip_dir / f"{mutation_id}.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
         
         return {"status": "accepted", "mutation_id": mutation_id}

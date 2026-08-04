@@ -18,6 +18,7 @@ python312Packages.buildPythonApplication {
     jinja2
     httpx
     fusepy
+    psutil
   ];
   nativeCheckInputs = with python312Packages; [
     hypothesis

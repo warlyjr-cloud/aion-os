@@ -12,6 +12,7 @@ from vek.engine import EvolutionEngine
 from immune_memory.monitor import SystemMonitor
 from evolution.polymorph import polymorph_system
 from quantum_fs.fuse_driver import mount_quantum_fs
+from relativity.scheduler import TimeDilationEngine
 import random
 
 def _project_root() -> Path:
@@ -75,11 +76,15 @@ def main() -> None:
     quantum_mount = root / ".aion-state" / "quantum"
     mount_quantum_fs(str(quantum_mount))
     
+    dilation_engine = TimeDilationEngine(threshold_percent=60.0)
+    dilation_engine.start()
+    
     running = True
 
     def stop_handler(_signum: int, _frame: object) -> None:
         nonlocal running
         running = False
+        dilation_engine.stop()
 
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
