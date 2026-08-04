@@ -13,6 +13,7 @@ from immune_memory.monitor import SystemMonitor
 from evolution.polymorph import polymorph_system
 from quantum_fs.fuse_driver import mount_quantum_fs
 from relativity.scheduler import TimeDilationEngine
+from aiond.genesis_lock import verify_dead_mans_switch
 import random
 
 def _project_root() -> Path:
@@ -30,7 +31,10 @@ def run_once(project_root: Path) -> dict[str, object]:
     inbox_dir.mkdir(parents=True, exist_ok=True)
     archive_dir.mkdir(parents=True, exist_ok=True)
     
-    # Process Immune System Monitoring
+    # 0. The Dead Man's Switch Verification (Security Hardening)
+    verify_dead_mans_switch(project_root)
+
+    # 1. Start Immune System Monitor
     monitor = SystemMonitor(project_root)
     immune_reaction = monitor.check_health_and_react()
     

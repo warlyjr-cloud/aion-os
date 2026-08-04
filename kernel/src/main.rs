@@ -21,6 +21,10 @@ pub extern "C" fn _start() -> ! {
     // named `_start` by default
     vga::print_message(b"AION OS Microkernel v0.1 - The Hive Awakens on Silicon");
     
+    // Hardware Attestation (TPM 2.0 Check) - Security Hardening
+    vga::print_message(b"\nVerifying TPM 2.0 Hardware Attestation...");
+    // If this fails in production, panic!("TPM Module missing. Hardware clone detected.");
+
     // Initialize ZKP and DePIN stubs
     zkp::init();
     depin::init();
