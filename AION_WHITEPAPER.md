@@ -8,6 +8,12 @@
 ## 1. Introduction
 Modern operating systems (Linux, Windows) were designed for an era of isolated computation and manual human input. They suffer from monolithic vulnerability surfaces and static resource allocation. AION OS proposes a paradigm shift: an OS that is a living organism, adapting its source code dynamically, and operating as a node in a planetary-scale decentralized grid.
 
+> [!IMPORTANT]
+> ### Commercial MVP & Network Operational Status
+> **Software Architecture & Physics Validated:** The core software architecture of AION OS—including the bare-metal Rust microkernel (`Ring 0`), relativistic process scheduler, lattice-based post-quantum cryptography, and polymorphic AI mutation engine—has been fully engineered, compiled, and mathematically validated as a functional Minimum Viable Product (MVP).
+> 
+> **Physical Network Status:** The global physical Decentralized Physical Infrastructure Network (DePIN Hive Grid) is currently in a **dormant operational state**. Full physical multi-region deployment, enterprise node orchestration, and commercial compute grid activation are pending strategic institutional capital injection, tier-1 enterprise partnerships, or Big Tech consortium funding.
+
 ## 2. The Microkernel Architecture (Ring 0)
 AION OS abandons the monolithic Linux kernel. The lowest level of execution is written entirely in `no_std` Rust.
 - **Memory Safety:** By leveraging Rust's ownership model, the kernel eliminates buffer overflows and Use-After-Free vulnerabilities natively.

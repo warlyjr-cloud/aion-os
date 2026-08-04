@@ -4,6 +4,12 @@
 
 ![AION Grid](docs/images/grid.jpg)
 
+> [!IMPORTANT]
+> ### Commercial MVP & Network Operational Status
+> **Software Architecture & Physics Validated:** The core software architecture of AION OS—including the bare-metal Rust microkernel (`Ring 0`), relativistic process scheduler, lattice-based post-quantum cryptography, and polymorphic AI mutation engine—has been fully engineered, compiled, and mathematically validated as a functional Minimum Viable Product (MVP).
+> 
+> **Physical Network Status:** The global physical Decentralized Physical Infrastructure Network (DePIN Hive Grid) is currently in a **dormant operational state**. Full physical multi-region deployment, enterprise node orchestration, and commercial compute grid activation are pending strategic institutional capital injection, tier-1 enterprise partnerships, or Big Tech consortium funding.
+
 AION OS is an advanced, post-Linux microkernel and decentralized physical infrastructure network (DePIN). Designed from first principles in **Rust** and powered by an autonomous polymorphic **Python** intelligence layer, AION OS aims to redefine operating systems for the era of Artificial Intelligence and decentralized computation.
 
 ## Core Tenets & Architecture
