@@ -38,7 +38,11 @@ AION OS is the first operating system modeled after theoretical physics:
 - **Quantum Entanglement**: Network nodes compute identical P2P state mutations simultaneously without transferring data across the internet, using deterministic cryptographic seeds.
 - **Post-Quantum Cryptography (PQC)**: The Rust Microkernel natively supports Lattice-based cryptography to defend against future Shor's algorithm attacks from quantum computers.
 
-## Getting Started
+### 5. Mobile DePIN Edge Nodes (Proof of Space-Time)
+The AION OS grid extends to the mobile edge via the **Android Edge Node**. This client transforms smartphones into verified DePIN infrastructure nodes.
+- **Bare-Metal C++ Engine:** The mobile app bypasses the JVM to execute cryptographic memory-hard hashes (SHA-256) directly in raw RAM via JNI/NDK.
+- **Physical Dedication Proofs:** The node proves its hardware dedication through a robust 3-stage **Proof of Space-Time (PoST)** algorithm, mutating memory with `secure_zero` anti-leak enforcement.
+- **Headless Mode:** Runs as a persistent Foreground Service with partial wake locks, contributing to the Skynet grid invisibly.
 
 AION OS is currently in **Phase 8** of its architectural development. 
 

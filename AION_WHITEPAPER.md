@@ -31,6 +31,7 @@ Running as PID 1, the Python-based AION Daemon acts as the consciousness of the 
 AION OS turns the host machine into a node of a global supercomputer.
 - **Gossip Protocol & Quantum Entanglement:** Nodes communicate state mutations via a decentralized gossip protocol. To achieve zero-latency state sync, nodes use Quantum Entanglement Simulation: they derive identical mathematical state changes simultaneously using deterministic seeds, avoiding network roundtrips.
 - **Relativity of Simultaneity:** When concurrent mutations arrive, the OS applies a Multiversal Battle algorithm, evaluating the cryptographic fitness of the diverging timelines and collapsing the state into the strongest reality.
+- **Mobile Edge Nodes (PoST):** The grid incorporates mobile edge devices (Android) acting as bare-metal computation nodes. Rather than relying on easily spoofed Java simulations, these nodes utilize a native C++ Proof of Space-Time (PoST) engine. They allocate physical 64-byte aligned RAM blocks, forcing cryptographic memory-hard mutations (time dilation hashing) to deterministically prove hardware dedication before returning zero-leaked (secure_zero) memory back to the host OS.
 - **Tokenomics and Parasitism:** The Grid allows workloads (e.g., LLM training) to be distributed across idle nodes. The Microkernel tracks CPU cycles consumed by foreign workloads (`depin.rs`) and settles these on a Layer-1 ledger, creating an economy of computation.
 
 ## 5. Security and Hardware Attestation
