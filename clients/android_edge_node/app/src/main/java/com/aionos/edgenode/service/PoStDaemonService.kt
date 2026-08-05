@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Binder
@@ -69,12 +68,15 @@ class PoStDaemonService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = buildNotification(_stateFlow.value)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
             )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // SPECIAL_USE is not available below API 34, but we can still start foreground
+            startForeground(NOTIFICATION_ID, notification)
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
@@ -91,7 +93,7 @@ class PoStDaemonService : Service() {
     fun startPoSt(
         ramMb: Int = 16,
         iterations: Int = 1000,
-        seed: ByteArray = ByteArray(32) { 0x42.toByte() }
+        seed: ByteArray = ByteArray(32) { 0x42.toByte() },
     ) {
         if (_stateFlow.value.isRunning) return
         if (!isStarting.compareAndSet(false, true)) return
@@ -132,25 +134,54 @@ class PoStDaemonService : Service() {
                     return@launch
                 }
 
+                if (isCancelled.get()) {
+                    return@launch
+                }
+
                 currentHandle = handle
                 val allocatedBytes = ramMb.toLong() * 1024 * 1024
 
                 _stateFlow.value = _stateFlow.value.copy(
                     status = PoStStatus.PROVING,
                     allocatedRamBytes = allocatedBytes,
-                    errorMessage = null
+                    errorMessage = null,
                 )
                 updateNotification()
 
+                if (isCancelled.get()) {
+                    nativeBridge.cancelPoSt(handle)
+                    return@launch
+                }
+
+                // Progress Polling Job
                 val startTime = System.currentTimeMillis()
+                val progressJob = launch {
+                    while (true) {
+                        val progress = nativeBridge.getProgress(handle)
+                        val now = System.currentTimeMillis()
+                        val elapsedSecs = (now - startTime).toDouble() / 1000.0
+                        val currentRate = if (elapsedSecs > 0) progress.toDouble() / elapsedSecs else 0.0
+
+                        _stateFlow.value = _stateFlow.value.copy(
+                            completedHashes = progress.toLong(),
+                            progressPercent = (progress.toFloat() / iterations.toFloat()) * 100f,
+                            currentHashRate = currentRate,
+                            elapsedTimeMs = now - startTime
+                        )
+                        kotlinx.coroutines.delay(500)
+                    }
+                }
+
                 val result = nativeBridge.computePoSt(handle, seed, iterations)
                 val endTime = System.currentTimeMillis()
+
+                progressJob.cancel()
 
                 val elapsedTime = (endTime - startTime).coerceAtLeast(1)
                 val hashRate = (result.iterationsCompleted.toDouble() / (elapsedTime.toDouble() / 1000.0))
 
                 when {
-                    isCancelled.get() || result.statusCode == PoSTResult.STATUS_CANCELLED -> {
+                    isCancelled.get() || (result.statusCode == PoSTResult.STATUS_CANCELLED) -> {
                         _stateFlow.value = _stateFlow.value.copy(
                             status = PoStStatus.CANCELLED,
                             completedHashes = result.iterationsCompleted.toLong(),
@@ -167,7 +198,7 @@ class PoStDaemonService : Service() {
                             currentHashRate = hashRate,
                             proofDigest = result.proofDigest,
                             proofHashHex = result.proofHex,
-                            errorMessage = null
+                            errorMessage = null,
                         )
                     }
                     else -> {
@@ -208,9 +239,7 @@ class PoStDaemonService : Service() {
         if (handle != 0L) {
             try {
                 nativeBridge.cancelPoSt(handle)
-                nativeBridge.releaseMemory(handle)
             } catch (_: Exception) {}
-            currentHandle = 0L
         }
         _stateFlow.value = _stateFlow.value.copy(
             status = PoStStatus.CANCELLED,
@@ -219,11 +248,33 @@ class PoStDaemonService : Service() {
         updateNotification()
     }
 
-    fun getCurrentState(): PoStState = _stateFlow.value
+    /**
+     * Pauses an ongoing PoST computation.
+     */
+    fun pausePoSt() {
+        val handle = currentHandle
+        if (handle != 0L) {
+            nativeBridge.pausePoSt(handle)
+            _stateFlow.value = _stateFlow.value.copy(status = PoStStatus.PAUSED)
+            updateNotification()
+        }
+    }
+
+    /**
+     * Resumes a paused PoST computation.
+     */
+    fun resumePoSt() {
+        val handle = currentHandle
+        if (handle != 0L) {
+            nativeBridge.resumePoSt(handle)
+            _stateFlow.value = _stateFlow.value.copy(status = PoStStatus.PROVING)
+            updateNotification()
+        }
+    }
 
     private fun acquireWakeLock() {
         if (wakeLock == null) {
-            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
             wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
                 setReferenceCounted(false)
             }
@@ -246,21 +297,19 @@ class PoStDaemonService : Service() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = getString(R.string.notification_channel_desc)
-            }
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = getString(R.string.notification_channel_desc)
         }
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(channel)
     }
 
     private fun updateNotification() {
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(NOTIFICATION_ID, buildNotification(_stateFlow.value))
     }
 
@@ -268,21 +317,17 @@ class PoStDaemonService : Service() {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
+        val pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, pendingIntentFlags)
 
         val contentText = when (state.status) {
             PoStStatus.IDLE -> getString(R.string.notification_text_idle)
             PoStStatus.ALLOCATING_MEMORY -> getString(R.string.notification_text_allocating)
-            PoStStatus.PROVING -> "Computing PoST: ${state.allocatedMemoryMb} MB, ${state.targetHashes} hashes"
+            PoStStatus.PROVING -> getString(R.string.notification_text_proving)
             PoStStatus.COMPLETED -> getString(R.string.notification_text_completed)
             PoStStatus.FAILED -> getString(R.string.notification_text_failed)
             PoStStatus.CANCELLED -> getString(R.string.notification_text_cancelled)
-            PoStStatus.PAUSED -> "PoST Computation Paused"
+            PoStStatus.PAUSED -> getString(R.string.status_paused)
         }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)

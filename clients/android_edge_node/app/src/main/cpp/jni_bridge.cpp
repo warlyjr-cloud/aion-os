@@ -197,6 +197,41 @@ Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeCancelPoSt(
 }
 
 JNIEXPORT void JNICALL
+Java_com_aionos_edgenode_jni_PoStNativeBridge_nativePausePoSt(
+    JNIEnv *env,
+    jobject thiz,
+    jlong handle
+) {
+    if (handle == 0L) return;
+    aion::post::PoSTContext* ctx = reinterpret_cast<aion::post::PoSTContext*>(handle);
+    aion::post::pause_post(ctx);
+    LOGI("Paused PoST computation for handle %p", ctx);
+}
+
+JNIEXPORT void JNICALL
+Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeResumePoSt(
+    JNIEnv *env,
+    jobject thiz,
+    jlong handle
+) {
+    if (handle == 0L) return;
+    aion::post::PoSTContext* ctx = reinterpret_cast<aion::post::PoSTContext*>(handle);
+    aion::post::resume_post(ctx);
+    LOGI("Resumed PoST computation for handle %p", ctx);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeGetProgress(
+    JNIEnv *env,
+    jobject thiz,
+    jlong handle
+) {
+    if (handle == 0L) return 0;
+    aion::post::PoSTContext* ctx = reinterpret_cast<aion::post::PoSTContext*>(handle);
+    return static_cast<jint>(ctx->progress.load(std::memory_order_relaxed));
+}
+
+JNIEXPORT void JNICALL
 Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeReleaseMemory(
     JNIEnv *env,
     jobject thiz,

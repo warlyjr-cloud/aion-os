@@ -29,6 +29,8 @@ struct PoSTContext {
     uint8_t* buffer = nullptr;
     size_t buffer_size_bytes = 0;
     std::atomic<bool> cancelled{false};
+    std::atomic<bool> paused{false};
+    std::atomic<uint32_t> progress{0};
     std::atomic<bool> in_use{false};
     std::mutex lock;
     std::condition_variable cv;
@@ -38,6 +40,8 @@ void secure_zero(void* ptr, size_t len);
 PoSTContext* allocate_post_context(int size_mb);
 ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_len, int iterations);
 void cancel_post(PoSTContext* ctx);
+void pause_post(PoSTContext* ctx);
+void resume_post(PoSTContext* ctx);
 void release_post_context(PoSTContext* ctx);
 
 } // namespace post

@@ -5,8 +5,8 @@
     <string name="notification_channel_desc">Ongoing Proof of Space-Time infrastructure computation daemon</string>
     <string name="notification_title">AION PoST Daemon Running</string>
     <string name="notification_text_idle">Daemon idle, ready for PoST allocation.</string>
-    <string name="notification_text_allocating">Allocating physical RAM for PoST...</string>
-    <string name="notification_text_proving">Computing Proof of Space-Time...</string>
+    <string name="notification_text_allocating">Allocating physical RAM for PoST&#8230;</string>
+    <string name="notification_text_proving">Computing Proof of Space-Time&#8230;</string>
     <string name="notification_text_completed">PoST computation completed successfully.</string>
     <string name="notification_text_failed">PoST computation failed.</string>
     <string name="notification_text_cancelled">PoST computation cancelled.</string>
@@ -28,4 +28,9 @@
     <string name="label_proof_digest">Proof Digest Hex:</string>
     <string name="label_status">Node Status:</string>
     <string name="label_allocated_ram">Allocated RAM:</string>
+    <string name="default_ram_mb">16</string>
+    <string name="default_iterations">1000</string>
+    <string name="label_infrastructure_node">Bare-Metal PoST Infrastructure Node</string>
+    <string name="label_real_time_metrics">Real-Time Node Metrics</string>
+    <string name="no_proof_yet">No proof generated yet.</string>
 </resources>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AION Edge Node</string>
+    <string name="notification_channel_name">Serviço AION PoST Daemon</string>
+    <string name="notification_channel_desc">Cálculo contínuo da infraestrutura Proof of Space-Time</string>
+    <string name="notification_title">AION PoST Daemon em Execução</string>
+    <string name="notification_text_idle">Daemon ocioso, pronto para alocação PoST.</string>
+    <string name="notification_text_allocating">Alocando RAM física para PoST&#8230;</string>
+    <string name="notification_text_proving">Calculando Proof of Space-Time&#8230;</string>
+    <string name="notification_text_completed">Cálculo PoST concluído com sucesso.</string>
+    <string name="notification_text_failed">Falha no cálculo PoST.</string>
+    <string name="notification_text_cancelled">Cálculo PoST cancelado.</string>
+    <string name="status_idle">OCIOSO</string>
+    <string name="status_allocating">ALOCANDO MEMÓRIA</string>
+    <string name="status_proving">PROCESSANDO</string>
+    <string name="status_paused">PAUSADO</string>
+    <string name="status_cancelled">CANCELADO</string>
+    <string name="status_completed">CONCLUÍDO</string>
+    <string name="status_failed">FALHOU</string>
+    <string name="btn_start">Iniciar PoST Daemon</string>
+    <string name="btn_cancel">Cancelar / Parar Daemon</string>
+    <string name="btn_pause">Pausar Daemon</string>
+    <string name="btn_resume">Retomar Daemon</string>
+    <string name="label_ram_alloc">Alocação de RAM (MB):</string>
+    <string name="label_iterations">Iterações Alvo:</string>
+    <string name="label_hash_rate">Taxa de Hash:</string>
+    <string name="label_elapsed_time">Tempo Decorrido:</string>
+    <string name="label_proof_digest">Hash do Proof (Hex):</string>
+    <string name="label_status">Status do Nó:</string>
+    <string name="label_allocated_ram">RAM Alocada:</string>
+    <string name="default_ram_mb">16</string>
+    <string name="default_iterations">1000</string>
+    <string name="label_infrastructure_node">Nó de Infraestrutura Bare-Metal PoST</string>
+    <string name="label_real_time_metrics">Métricas do Nó em Tempo Real</string>
+    <string name="no_proof_yet">Nenhum proof gerado ainda.</string>
+</resources>

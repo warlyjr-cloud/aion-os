@@ -8,6 +8,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffast-math")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 
+# Global linker flags for 16 KB page alignment (Android 15 compatibility)
+add_link_options("-Wl,-z,common-page-size=16384")
+add_link_options("-Wl,-z,max-page-size=16384")
+add_link_options("-Wl,-z,relro")
+add_link_options("-Wl,-z,now")
+
+
+
+
+
 # Source files for native C++ PoST core
 set(NATIVE_SOURCES
     src/main/cpp/post_engine.cpp
@@ -24,5 +34,10 @@ target_include_directories(aion_post PRIVATE src/main/cpp)
 # Locate NDK logging library
 find_library(log-lib log)
 
-# Link NDK logging library
-target_link_libraries(aion_post PRIVATE ${log-lib})
+# Link libraries
+target_link_libraries(aion_post PRIVATE ${log-lib} c++)
+
+# Enable 16 KB page alignment for Android 15+ compatibility (Reinforcement)
+target_link_options(aion_post PRIVATE "-Wl,-z,common-page-size=16384" "-Wl,-z,max-page-size=16384")
+
+

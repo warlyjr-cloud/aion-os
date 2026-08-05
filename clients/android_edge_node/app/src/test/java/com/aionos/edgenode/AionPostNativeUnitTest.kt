@@ -85,8 +85,9 @@ class AionPostNativeUnitTest {
     fun testAllocateMemoryParameterBoundsValidation() {
         val bridge = try {
             PoStNativeBridge()
-        } catch (e: UnsatisfiedLinkError) {
+        } catch (e: Throwable) {
             // Expected on pure host JVM if native lib is not loaded
+            // Catching Throwable to handle UnsatisfiedLinkError, ExceptionInInitializerError, NoClassDefFoundError
             return
         }
 
@@ -119,7 +120,7 @@ class AionPostNativeUnitTest {
     fun testZeroHandleValidation() {
         val bridge = try {
             PoStNativeBridge()
-        } catch (e: UnsatisfiedLinkError) {
+        } catch (e: Throwable) {
             return
         }
 

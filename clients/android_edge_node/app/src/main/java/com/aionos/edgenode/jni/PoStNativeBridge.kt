@@ -31,6 +31,12 @@ class PoStNativeBridge {
 
     private external fun nativeCancelPoSt(handle: Long)
 
+    private external fun nativePausePoSt(handle: Long)
+
+    private external fun nativeResumePoSt(handle: Long)
+
+    private external fun nativeGetProgress(handle: Long): Int
+
     /**
      * Allocates native physical RAM (in Megabytes) for Space-Time commitment.
      * @param sizeMb Size in Megabytes (1 to 256 MB).
@@ -106,6 +112,51 @@ class PoStNativeBridge {
                 throw IllegalStateException("Handle released or invalid")
             }
             nativeCancelPoSt(handle)
+        } finally {
+            lock.readLock().unlock()
+        }
+    }
+
+    /**
+     * Pauses ongoing PoST computation.
+     */
+    fun pausePoSt(handle: Long) {
+        if (handle == 0L) return
+        val lock = handleLocks[handle] ?: return
+        lock.readLock().lock()
+        try {
+            if (!activeHandles.contains(handle)) return
+            nativePausePoSt(handle)
+        } finally {
+            lock.readLock().unlock()
+        }
+    }
+
+    /**
+     * Resumes paused PoST computation.
+     */
+    fun resumePoSt(handle: Long) {
+        if (handle == 0L) return
+        val lock = handleLocks[handle] ?: return
+        lock.readLock().lock()
+        try {
+            if (!activeHandles.contains(handle)) return
+            nativeResumePoSt(handle)
+        } finally {
+            lock.readLock().unlock()
+        }
+    }
+
+    /**
+     * Polls current iteration progress from native context.
+     */
+    fun getProgress(handle: Long): Int {
+        if (handle == 0L) return 0
+        val lock = handleLocks[handle] ?: return 0
+        lock.readLock().lock()
+        try {
+            if (!activeHandles.contains(handle)) return 0
+            return nativeGetProgress(handle)
         } finally {
             lock.readLock().unlock()
         }

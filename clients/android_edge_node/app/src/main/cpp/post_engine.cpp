@@ -36,6 +36,8 @@ PoSTContext* allocate_post_context(int size_mb) {
     ctx->buffer = static_cast<uint8_t*>(ptr);
     ctx->buffer_size_bytes = size_bytes;
     ctx->cancelled.store(false);
+    ctx->paused.store(false);
+    ctx->progress.store(0);
     ctx->in_use.store(false);
     return ctx;
 }
@@ -110,9 +112,22 @@ ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_
 
     uint8_t block_input[40];
     for (size_t i = 1; i < num_blocks; ++i) {
-        if (i % 1024 == 0 && ctx->cancelled.load(std::memory_order_relaxed)) {
-            result.status = StatusCode::CANCELLED;
-            return result;
+        if (i % 512 == 0) {
+            if (ctx->cancelled.load(std::memory_order_relaxed)) {
+                result.status = StatusCode::CANCELLED;
+                return result;
+            }
+            if (ctx->paused.load(std::memory_order_relaxed)) {
+                std::unique_lock<std::mutex> lock(ctx->lock);
+                ctx->cv.wait(lock, [ctx] {
+                    return !ctx->paused.load(std::memory_order_relaxed) ||
+                           ctx->cancelled.load(std::memory_order_relaxed);
+                });
+                if (ctx->cancelled.load(std::memory_order_relaxed)) {
+                    result.status = StatusCode::CANCELLED;
+                    return result;
+                }
+            }
         }
         std::memcpy(block_input, ctx->buffer + (i - 1) * 32, 32);
         pack_uint64_be(static_cast<uint64_t>(i), block_input + 32);
@@ -127,10 +142,25 @@ ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_
     uint8_t W_new[32];
 
     for (int r = 0; r < iterations; ++r) {
-        if (r % 64 == 0 && ctx->cancelled.load(std::memory_order_relaxed)) {
-            result.status = StatusCode::CANCELLED;
-            result.iterations_completed = r;
-            return result;
+        if (r % 32 == 0) {
+            ctx->progress.store(static_cast<uint32_t>(r), std::memory_order_relaxed);
+            if (ctx->cancelled.load(std::memory_order_relaxed)) {
+                result.status = StatusCode::CANCELLED;
+                result.iterations_completed = r;
+                return result;
+            }
+            if (ctx->paused.load(std::memory_order_relaxed)) {
+                std::unique_lock<std::mutex> lock(ctx->lock);
+                ctx->cv.wait(lock, [ctx] {
+                    return !ctx->paused.load(std::memory_order_relaxed) ||
+                           ctx->cancelled.load(std::memory_order_relaxed);
+                });
+                if (ctx->cancelled.load(std::memory_order_relaxed)) {
+                    result.status = StatusCode::CANCELLED;
+                    result.iterations_completed = r;
+                    return result;
+                }
+            }
         }
 
         uint64_t raw_index = unpack_uint64_be(W);
@@ -150,6 +180,7 @@ ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_
         std::memcpy(W, W_new, 32);
     }
 
+    ctx->progress.store(static_cast<uint32_t>(iterations), std::memory_order_relaxed);
     result.iterations_completed = iterations;
 
     // Stage 3: Proof Digest Compression
@@ -171,6 +202,22 @@ ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_
 void cancel_post(PoSTContext* ctx) {
     if (ctx) {
         ctx->cancelled.store(true, std::memory_order_release);
+        std::lock_guard<std::mutex> lock(ctx->lock);
+        ctx->cv.notify_all();
+    }
+}
+
+void pause_post(PoSTContext* ctx) {
+    if (ctx) {
+        ctx->paused.store(true, std::memory_order_release);
+    }
+}
+
+void resume_post(PoSTContext* ctx) {
+    if (ctx) {
+        ctx->paused.store(false, std::memory_order_release);
+        std::lock_guard<std::mutex> lock(ctx->lock);
+        ctx->cv.notify_all();
     }
 }
 

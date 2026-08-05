@@ -1,7 +1,6 @@
 package com.aionos.edgenode.ui
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
@@ -25,6 +24,7 @@ import androidx.cardview.widget.CardView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.core.graphics.toColorInt
 import com.aionos.edgenode.R
 import com.aionos.edgenode.model.PoStState
 import com.aionos.edgenode.model.PoStStatus
@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etRam: EditText
     private lateinit var etIterations: EditText
     private lateinit var btnStart: Button
+    private lateinit var btnPauseResume: Button
     private lateinit var btnCancel: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var tvAllocatedRam: TextView
@@ -80,7 +81,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         val intent = Intent(this, PoStDaemonService::class.java)
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
@@ -116,20 +117,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         val statusColor = when (state.status) {
-            PoStStatus.COMPLETED -> Color.parseColor("#2E7D32")
-            PoStStatus.PROVING, PoStStatus.ALLOCATING_MEMORY -> Color.parseColor("#1565C0")
-            PoStStatus.PAUSED, PoStStatus.CANCELLED -> Color.parseColor("#EF6C00")
-            PoStStatus.FAILED -> Color.parseColor("#C62828")
-            PoStStatus.IDLE -> Color.parseColor("#424242")
+            PoStStatus.COMPLETED -> "#2E7D32".toColorInt()
+            PoStStatus.PROVING, PoStStatus.ALLOCATING_MEMORY -> "#1565C0".toColorInt()
+            PoStStatus.PAUSED, PoStStatus.CANCELLED -> "#EF6C00".toColorInt()
+            PoStStatus.FAILED -> "#C62828".toColorInt()
+            PoStStatus.IDLE -> "#424242".toColorInt()
         }
         tvStatus.setTextColor(statusColor)
 
         btnStart.isEnabled = !state.isRunning
         btnCancel.isEnabled = state.isRunning
+        btnPauseResume.isEnabled = state.isRunning
+
+        if (state.status == PoStStatus.PAUSED) {
+            btnPauseResume.text = getString(R.string.btn_resume)
+        } else {
+            btnPauseResume.text = getString(R.string.btn_pause)
+        }
+
         etRam.isEnabled = !state.isRunning
         etIterations.isEnabled = !state.isRunning
 
-        if (state.status == PoStStatus.PROVING || state.status == PoStStatus.ALLOCATING_MEMORY) {
+        if ((state.status == PoStStatus.PROVING) || (state.status == PoStStatus.ALLOCATING_MEMORY)) {
             progressBar.visibility = View.VISIBLE
             progressBar.isIndeterminate = (state.status == PoStStatus.ALLOCATING_MEMORY)
         } else {
@@ -141,25 +150,24 @@ class MainActivity : AppCompatActivity() {
         tvAllocatedRam.text = String.format(Locale.US, "Allocated RAM: %d MB (%d Bytes)", ramMbDisplay, ramBytesDisplay)
 
         tvHashes.text = String.format(Locale.US, "Completed Hashes: %d / %d", state.completedHashes, state.targetHashes)
+        progressBar.progress = state.progressPercent.toInt()
         tvExecutionTime.text = String.format(Locale.US, "Execution Duration: %d ms", state.elapsedTimeMs)
         tvHashRate.text = String.format(Locale.US, "Current Hash Rate: %.2f H/s", state.currentHashRate)
 
-        if (!state.proofHashHex.isNull_orEmpty()) {
+        if (!state.proofHashHex.isNullOrEmpty()) {
             tvProofDigest.text = state.proofHashHex
             tvProofDigest.visibility = View.VISIBLE
         } else {
-            tvProofDigest.text = "No proof generated yet."
+            tvProofDigest.text = getString(R.string.no_proof_yet)
         }
 
-        if (!state.errorMessage.isNull_orEmpty()) {
+        if (!state.errorMessage.isNullOrEmpty()) {
             tvErrorMessage.text = String.format("Error: %s", state.errorMessage)
             tvErrorMessage.visibility = View.VISIBLE
         } else {
             tvErrorMessage.visibility = View.GONE
         }
     }
-
-    private fun CharSequence?.isNull_orEmpty(): Boolean = this == null || this.isEmpty()
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -173,16 +181,16 @@ class MainActivity : AppCompatActivity() {
         val rootScrollView = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
+                LinearLayout.LayoutParams.MATCH_PARENT,
             )
             isFillViewport = true
-            setBackgroundColor(Color.parseColor("#F5F5F7"))
+            setBackgroundColor("#F5F5F7".toColorInt())
         }
 
         val mainContainer = LinearLayout(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.WRAP_CONTENT,
             )
             orientation = LinearLayout.VERTICAL
             val pad = dpToPx(16)
@@ -196,18 +204,22 @@ class MainActivity : AppCompatActivity() {
                 val pad = dpToPx(16)
                 setPadding(pad, pad, pad, pad)
 
-                addView(TextView(this@MainActivity).apply {
-                    text = getString(R.string.app_name)
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
-                    setTypeface(null, Typeface.BOLD)
-                    setTextColor(Color.parseColor("#1C1B1F"))
-                })
+                addView(
+                    TextView(this@MainActivity).apply {
+                        text = getString(R.string.app_name)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+                        setTypeface(null, Typeface.BOLD)
+                        setTextColor("#1C1B1F".toColorInt())
+                    },
+                )
 
-                addView(TextView(this@MainActivity).apply {
-                    text = "Bare-Metal PoST Infrastructure Node"
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                    setTextColor(Color.parseColor("#49454F"))
-                })
+                addView(
+                    TextView(this@MainActivity).apply {
+                        text = getString(R.string.label_infrastructure_node)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                        setTextColor("#49454F".toColorInt())
+                    },
+                )
             }
             addView(contentLayout)
         }
@@ -246,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                     setPadding(0, dpToPx(12), 0, dpToPx(4))
                 })
                 etRam = EditText(this@MainActivity).apply {
-                    setText("16")
+                    setText(getString(R.string.default_ram_mb))
                     inputType = InputType.TYPE_CLASS_NUMBER
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                 }
@@ -259,7 +271,7 @@ class MainActivity : AppCompatActivity() {
                     setPadding(0, dpToPx(12), 0, dpToPx(4))
                 })
                 etIterations = EditText(this@MainActivity).apply {
-                    setText("1000")
+                    setText(getString(R.string.default_iterations))
                     inputType = InputType.TYPE_CLASS_NUMBER
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
                 }
@@ -279,15 +291,26 @@ class MainActivity : AppCompatActivity() {
                         val iterations = etIterations.text.toString().toIntOrNull() ?: 1000
 
                         val intent = Intent(this@MainActivity, PoStDaemonService::class.java)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
+                        startForegroundService(intent)
                         if (!isBound) {
-                            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+                            bindService(intent, serviceConnection, BIND_AUTO_CREATE)
                         }
                         daemonService?.startPoSt(ram, iterations)
+                    }
+                }
+
+                btnPauseResume = Button(this@MainActivity).apply {
+                    text = "Pause"
+                    isEnabled = false
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                        setMargins(dpToPx(8), 0, 0, 0)
+                    }
+                    setOnClickListener {
+                        if (daemonService?.stateFlow?.value?.status == PoStStatus.PAUSED) {
+                            daemonService?.resumePoSt()
+                        } else {
+                            daemonService?.pausePoSt()
+                        }
                     }
                 }
 
@@ -303,6 +326,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 buttonLayout.addView(btnStart)
+                buttonLayout.addView(btnPauseResume)
                 buttonLayout.addView(btnCancel)
                 addView(buttonLayout)
             }
@@ -318,7 +342,7 @@ class MainActivity : AppCompatActivity() {
                 setPadding(pad, pad, pad, pad)
 
                 addView(TextView(this@MainActivity).apply {
-                    text = "Real-Time Node Metrics"
+                    text = getString(R.string.label_real_time_metrics)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
                     setTypeface(null, Typeface.BOLD)
                     setPadding(0, 0, 0, dpToPx(8))
@@ -379,10 +403,10 @@ class MainActivity : AppCompatActivity() {
                 })
 
                 tvProofDigest = TextView(this@MainActivity).apply {
-                    text = "No proof generated yet."
+                    text = getString(R.string.no_proof_yet)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                     setTypeface(Typeface.MONOSPACE)
-                    setBackgroundColor(Color.parseColor("#E0E0E0"))
+                    setBackgroundColor("#E0E0E0".toColorInt())
                     val p = dpToPx(8)
                     setPadding(p, p, p, p)
                     setTextIsSelectable(true)
@@ -392,7 +416,7 @@ class MainActivity : AppCompatActivity() {
                 tvErrorMessage = TextView(this@MainActivity).apply {
                     visibility = View.GONE
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                    setTextColor(Color.parseColor("#C62828"))
+                    setTextColor("#C62828".toColorInt())
                     setTypeface(null, Typeface.BOLD)
                     setPadding(0, dpToPx(8), 0, 0)
                 }
@@ -410,7 +434,7 @@ class MainActivity : AppCompatActivity() {
         return CardView(this).apply {
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.WRAP_CONTENT,
             )
             params.setMargins(0, 0, 0, dpToPx(16))
             layoutParams = params

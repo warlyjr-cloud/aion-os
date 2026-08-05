@@ -2,6 +2,8 @@
 #include <cstring>
 #include <iomanip>
 #include <sstream>
+#include <ostream>
+#include <iostream>
 
 namespace aion {
 namespace crypto {
@@ -138,7 +140,7 @@ std::array<uint8_t, 32> SHA256::hash(const uint8_t* data, size_t len) {
 std::string SHA256::bytesToHex(const uint8_t* data, size_t len) {
     std::ostringstream ss;
     for (size_t i = 0; i < len; ++i) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]);
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<unsigned int>(data[i]);
     }
     return ss.str();
 }
