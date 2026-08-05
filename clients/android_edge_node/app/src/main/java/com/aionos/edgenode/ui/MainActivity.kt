@@ -71,7 +71,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate()
+        super.onCreate(savedInstanceState)
 
         buildUiLayout()
         requestNotificationPermissionIfNeeded()
