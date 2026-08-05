@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from utils.file_lock import FileLock
 
 
 class MemoryTrust(StrEnum):
@@ -57,37 +60,43 @@ class MemoryStore:
             )
         if entry.trust is MemoryTrust.UNTRUSTED and entry.action_authority:
             raise ValueError("untrusted memory cannot carry action authority")
-        entries = {item.memory_id: item for item in self.list_all()}
-        if entry.memory_id in entries:
-            raise ValueError(f"duplicate memory id: {entry.memory_id}")
-        entries[entry.memory_id] = entry
-        self._save(entries.values())
+        
+        with FileLock(self.path):
+            entries = {item.memory_id: item for item in self._read_all()}
+            if entry.memory_id in entries:
+                raise ValueError(f"duplicate memory id: {entry.memory_id}")
+            self._append(entry)
 
     def promote(self, memory_id: str, *, evidence: str, approved_by: str) -> MemoryEntry:
-        entries = {item.memory_id: item for item in self.list_all()}
-        entry = entries[memory_id]
-        if entry.quarantined:
-            raise ValueError("quarantined memory cannot be promoted")
-        if not evidence.strip() or not approved_by.strip():
-            raise ValueError("promotion requires evidence and an approver")
-        entry.trust = MemoryTrust.VERIFIED
-        entry.evidence.append(evidence)
-        entry.history.append(f"verified by {approved_by} at {datetime.now(UTC).isoformat()}")
-        entries[memory_id] = entry
-        self._save(entries.values())
-        return entry
+        with FileLock(self.path):
+            entries = {item.memory_id: item for item in self._read_all()}
+            entry = entries[memory_id]
+            if entry.quarantined:
+                raise ValueError("quarantined memory cannot be promoted")
+            if not evidence.strip() or not approved_by.strip():
+                raise ValueError("promotion requires evidence and an approver")
+            entry.trust = MemoryTrust.VERIFIED
+            entry.evidence.append(evidence)
+            entry.history.append(f"verified by {approved_by} at {datetime.now(UTC).isoformat()}")
+            self._append(entry)
+            return entry
 
     def quarantine(self, memory_id: str, *, reason: str) -> MemoryEntry:
-        entries = {item.memory_id: item for item in self.list_all()}
-        entry = entries[memory_id]
-        entry.quarantined = True
-        entry.action_authority = False
-        entry.history.append(f"quarantined: {reason}")
-        entries[memory_id] = entry
-        self._save(entries.values())
-        return entry
+        with FileLock(self.path):
+            entries = {item.memory_id: item for item in self._read_all()}
+            entry = entries[memory_id]
+            entry.quarantined = True
+            entry.action_authority = False
+            entry.history.append(f"quarantined: {reason}")
+            self._append(entry)
+            return entry
 
     def list_all(self) -> list[MemoryEntry]:
+        with FileLock(self.path):
+            entries = {item.memory_id: item for item in self._read_all()}
+            return list(entries.values())
+
+    def _read_all(self) -> list[MemoryEntry]:
         if not self.path.exists():
             return []
         return [
@@ -96,6 +105,8 @@ class MemoryStore:
             if line
         ]
 
-    def _save(self, entries: object) -> None:
-        serialized = "\n".join(item.model_dump_json() for item in entries)  # type: ignore[attr-defined]
-        self.path.write_text(serialized + ("\n" if serialized else ""), encoding="utf-8")
+    def _append(self, entry: MemoryEntry) -> None:
+        with self.path.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(entry.model_dump_json() + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())

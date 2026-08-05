@@ -2,7 +2,11 @@ import os
 import stat
 import time
 import logging
-from fuse import FUSE, Operations
+try:
+    from fuse import FUSE, Operations
+except EnvironmentError:
+    FUSE = None
+    Operations = object  # Mock fallback para permitir a declarao da classe
 
 from intent import IntentContract
 from providers.llm import AnthropicProvider
@@ -68,6 +72,9 @@ def mount_quantum_fs(mountpoint: str):
     if not os.path.exists(mountpoint):
         os.makedirs(mountpoint, exist_ok=True)
     try:
+        if FUSE is None:
+            logging.warning(f"FUSE not available, skipping Quantum FS mount at {mountpoint}")
+            return
         FUSE(QuantumFS(), mountpoint, nothreads=True, foreground=False)
         logging.info(f"Quantum FS mounted at {mountpoint}")
     except Exception as e:

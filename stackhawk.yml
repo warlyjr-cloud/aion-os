@@ -1,0 +1,29 @@
+app:
+  # O applicationId vincula as descobertas ao seu projeto no dashboard do StackHawk.
+  # Substitua 'seu_app_id_aqui' pelo ID gerado ao rodar o 'hawk init' ou copiado do app.stackhawk.com
+  applicationId: seu_app_id_aqui
+  
+  # Ambiente onde a aplicao est rodando (Development, Staging, Production)
+  env: Development
+  
+  # URL base da sua aplicao. Como usamos FastAPI/Uvicorn no AION OS, o padro  localhost na porta 8000.
+  host: http://localhost:8000
+
+  # Se houver rotas na API que necessitem de autenticao para serem testadas de forma mais profunda,
+  # podemos configurar o envio de tokens JWT nas requisies de teste.
+  # auth:
+  #   tokenAuthorization:
+  #     type: HEADER
+  #     value: Bearer ${SEU_TOKEN_DE_TESTE}
+
+hawk:
+  spider:
+    baseSpider:
+      enabled: true
+    ajaxSpider:
+      enabled: false # Pode ser ativado caso a dashboard seja uma SPA complexa
+    
+    # Podemos incluir rotas especficas ou excluir rotas destrutivas caso a API tenha mtodos POST/DELETE sem mock
+    # excludePaths:
+    #   - /grid/compute
+    #   - /grid/gossip

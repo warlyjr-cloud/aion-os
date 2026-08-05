@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import os
 import signal
+import sys
 import time
+import traceback
 from pathlib import Path
 
 from audit import AuditLog
@@ -20,9 +23,8 @@ def _project_root() -> Path:
     return Path(os.environ.get("AION_PROJECT_ROOT", Path.cwd())).resolve()
 
 
-def run_once(project_root: Path) -> dict[str, object]:
+def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
     state_root = project_root / ".aion-state"
-    log = AuditLog(state_root / "audit.jsonl")
     stopped = (state_root / "STOP").exists()
     
     # Process Inbox
@@ -40,16 +42,25 @@ def run_once(project_root: Path) -> dict[str, object]:
     
     processed_intents = []
     if not stopped:
-        for intent_file in inbox_dir.glob("*.txt"):
-            objective = intent_file.read_text(encoding="utf-8").strip()
-            if objective:
-                try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            futures = {}
+            for intent_file in inbox_dir.glob("*.txt"):
+                objective = intent_file.read_text(encoding="utf-8").strip()
+                if objective:
                     engine = EvolutionEngine(project_root)
-                    record = engine.plan(objective)
+                    future = executor.submit(engine.plan, objective)
+                    futures[future] = intent_file
+                else:
+                    intent_file.rename(archive_dir / intent_file.name)
+            
+            for future in concurrent.futures.as_completed(futures):
+                intent_file = futures[future]
+                try:
+                    record = future.result()
                     processed_intents.append({"file": intent_file.name, "status": "planned", "mutation_id": record.mutation_id})
                 except Exception as e:
                     processed_intents.append({"file": intent_file.name, "status": "error", "error": str(e)})
-            intent_file.rename(archive_dir / intent_file.name)
+                intent_file.rename(archive_dir / intent_file.name)
             
     # Probabilistic Polymorphism (10% chance per run for MVP demonstration)
     polymorph_target = None
@@ -74,7 +85,8 @@ def main() -> None:
     args = parser.parse_args()
     root = _project_root()
     if args.once:
-        print(json.dumps(run_once(root), sort_keys=True))
+        state_root = root / ".aion-state"
+        print(json.dumps(run_once(root, AuditLog(state_root / "audit.jsonl")), sort_keys=True))
         return
         
     quantum_mount = root / ".aion-state" / "quantum"
@@ -82,6 +94,9 @@ def main() -> None:
     
     dilation_engine = TimeDilationEngine(threshold_percent=60.0)
     dilation_engine.start()
+    
+    state_root = root / ".aion-state"
+    log = AuditLog(state_root / "audit.jsonl")
     
     running = True
 
@@ -93,7 +108,11 @@ def main() -> None:
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
     while running and not (root / ".aion-state" / "STOP").exists():
-        run_once(root)
+        try:
+            run_once(root, log)
+        except Exception as e:
+            print(f"CRITICAL ERROR in daemon heartbeat: {e}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
         time.sleep(max(args.interval, 0.1))
 
 

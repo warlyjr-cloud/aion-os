@@ -25,5 +25,6 @@ def test_audit_hash_chain_detects_tampering(tmp_path: Path) -> None:
         '"event_type":"one"', '"event_type":"tampered"'
     )
     log.path.write_text(content, encoding="utf-8")
+    log = AuditLog(tmp_path / "audit.jsonl")
     with pytest.raises(ValueError, match="tampered audit event"):
         log.verify()

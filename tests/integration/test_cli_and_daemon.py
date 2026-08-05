@@ -52,4 +52,6 @@ def test_cli_full_simulated_decision_flow(tmp_path: Path, monkeypatch: pytest.Mo
     rolled_back = runner.invoke(app, ["rollback", "--mutation-id", mutation_id])
     assert rolled_back.exit_code == 0, rolled_back.stdout
     assert runner.invoke(app, ["stop"]).exit_code == 0
-    assert run_once(tmp_path)["healthy"] is False
+    from audit import AuditLog
+    log = AuditLog(tmp_path / ".aion-state" / "audit.jsonl")
+    assert run_once(tmp_path, log)["healthy"] is False
