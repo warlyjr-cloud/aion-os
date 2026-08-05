@@ -7,7 +7,10 @@ import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Unit & Stress Test suite for PoStDaemonService lifecycle, state flow,
@@ -126,35 +129,35 @@ class PoStDaemonServiceTest {
      */
     @Test
     fun testCancelDuringAllocationRaceSimulation() {
-        @Volatile var currentHandle = 0L
-        @Volatile var status = PoStStatus.IDLE
-        @Volatile var nativeCancelCalled = false
+        val currentHandle = AtomicLong(0L)
+        val status = AtomicReference(PoStStatus.IDLE)
+        val nativeCancelCalled = AtomicBoolean(false)
 
         val allocationLatch = CountDownLatch(1)
         val cancelLatch = CountDownLatch(1)
 
         // Thread 1: startPoSt simulation
         val serviceThread = Thread {
-            status = PoStStatus.ALLOCATING_MEMORY
+            status.set(PoStStatus.ALLOCATING_MEMORY)
             allocationLatch.countDown()
 
             // Simulating slow allocateMemory
             Thread.sleep(50)
             val allocatedHandle = 0x12345678L
-            currentHandle = allocatedHandle
+            currentHandle.set(allocatedHandle)
 
             // Overwrites status to PROVING regardless of whether status was set to CANCELLED!
-            status = PoStStatus.PROVING
+            status.set(PoStStatus.PROVING)
         }
 
         // Thread 2: cancelPoSt simulation
         val cancelThread = Thread {
             allocationLatch.await()
-            val handleToCancel = currentHandle
+            val handleToCancel = currentHandle.get()
             if (handleToCancel != 0L) {
-                nativeCancelCalled = true
+                nativeCancelCalled.set(true)
             }
-            status = PoStStatus.CANCELLED
+            status.set(PoStStatus.CANCELLED)
             cancelLatch.countDown()
         }
 
@@ -165,7 +168,7 @@ class PoStDaemonServiceTest {
         cancelThread.join()
 
         // Empirical check: cancel happened while currentHandle was 0L
-        assertFalse("Native cancel was not called because currentHandle was 0L during allocation", nativeCancelCalled)
-        assertEquals("Status was overwritten back to PROVING by startPoSt coroutine after cancel", PoStStatus.PROVING, status)
+        assertFalse("Native cancel was not called because currentHandle was 0L during allocation", nativeCancelCalled.get())
+        assertEquals("Status was overwritten back to PROVING by startPoSt coroutine after cancel", PoStStatus.PROVING, status.get())
     }
 }
