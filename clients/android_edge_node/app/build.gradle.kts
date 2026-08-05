@@ -5,13 +5,13 @@ plugins {
 
 android {
     namespace = "com.aionos.edgenode"
-    compileSdk = 34
-    ndkVersion = "25.1.8937393"
+    compileSdk = 37
+    ndkVersion = "27.0.12077973"
 
     defaultConfig {
         applicationId = "com.aionos.edgenode"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0.0"
 
@@ -21,8 +21,12 @@ android {
             cmake {
                 cppFlags("-std=c++17 -O3 -Wall -Wextra -frtti -fexceptions")
                 arguments(
-                    "-DANDROID_STL=c++_shared",
-                    "-DANDROID_PLATFORM=android-26"
+                    "-DANDROID_STL=c++_static",
+                    "-DANDROID_PLATFORM=android-26",
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,common-page-size=16384 -Wl,-z,max-page-size=16384",
+                    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,common-page-size=16384 -Wl,-z,max-page-size=16384",
+                    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,-z,common-page-size=16384 -Wl,-z,max-page-size=16384"
                 )
                 abiFilters("arm64-v8a", "x86_64")
             }
@@ -42,6 +46,15 @@ android {
         }
     }
 
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+            // Exclusão agressiva para garantir que a versão shared não entre no APK
+            excludes.add("**/libc++_shared.so")
+        }
+    }
+
+
     externalNativeBuild {
         cmake {
             path = file("CMakeLists.txt")
@@ -54,8 +67,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     testOptions {
@@ -67,18 +82,18 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("androidx.core:core-ktx:1.19.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.14.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
     // Unit testing libraries
     testImplementation("junit:junit:4.13.2")
 
     // Android Instrumentation & Espresso testing
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
 }
