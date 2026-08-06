@@ -19,6 +19,7 @@ result
 result-*
 .env
 .env.*
+!.env.example
 .claude/audit/
 .pytest_temp/
 proofs/mut-*/
