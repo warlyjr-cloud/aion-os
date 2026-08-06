@@ -1,0 +1,12 @@
+services:
+  aion:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      AION_RUNTIME_MODE: simulation
+      AION_ALLOW_HOST_MUTATION: "0"
+    restart: unless-stopped
+    command: ["python", "scripts/verify_deployment.py"]

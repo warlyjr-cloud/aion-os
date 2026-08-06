@@ -1,9 +1,9 @@
 import ast
-import astor
-import random
 import logging
+import random
 from pathlib import Path
-from typing import Optional
+from typing import Any, cast
+
 from evolution.schrodinger import SchrodingerExecutor
 
 class ASTPolymorpher(ast.NodeTransformer):
@@ -49,7 +49,10 @@ def apply_polymorphism(project_root: Path) -> bool:
         mutated_tree = mutator.visit(tree)
         ast.fix_missing_locations(mutated_tree)
         
-        mutated_code = astor.to_source(mutated_tree)
+        mutated_code = ast.unparse(mutated_tree)
+
+        if not mutated_code.strip():
+            raise ValueError("generated mutated code is empty")
         
         # Verify it compiles
         compile(mutated_code, target_file.name, "exec")
@@ -61,7 +64,7 @@ def apply_polymorphism(project_root: Path) -> bool:
 
     try:
         # We pass 3 different realities (salt lengths) to test simultaneously
-        return scheduler.execute_in_superposition(_attempt_mutation, [(4,), (8,), (12,)])
+        return cast(Any, scheduler).execute_in_superposition(_attempt_mutation, [(4,), (8,), (12,)])
     except RuntimeError:
         logging.error("[\ud83e\uddec POLYMORPH] Mutation failed in all quantum realities.")
         return False

@@ -1,0 +1,11 @@
+.git
+.vs
+__pycache__
+.pytest_cache
+.pytest_temp
+.venv
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo

@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import os
 
 from pydantic import BaseModel, ConfigDict
+
+from security.secrets import SecretConfig, ensure_public_safe_payload
 
 
 class CouncilDecision(BaseModel):
@@ -18,6 +21,12 @@ class ModelCouncil:
     def evaluate(
         *, proposer: str, verifier: str, critical: bool, accepted: bool, candidate_config: str | None = None
     ) -> CouncilDecision:
+        config = SecretConfig.from_environment()
+        candidate_payload = ensure_public_safe_payload(candidate_config or "")
+        if isinstance(candidate_payload, str):
+            safe_candidate_config = candidate_payload
+        else:
+            safe_candidate_config = ""
         if critical and proposer == verifier:
             return CouncilDecision(
                 approved=False,
@@ -27,15 +36,17 @@ class ModelCouncil:
             )
             
         # Red Team Evaluation
-        if candidate_config and os.getenv("ANTHROPIC_API_KEY"):
+        if safe_candidate_config and (config.provider_api_key or os.getenv("ANTHROPIC_API_KEY")):
             try:
                 from anthropic import Anthropic
-                client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+                api_key = config.provider_api_key or os.getenv("ANTHROPIC_API_KEY")
+                client = Anthropic(api_key=api_key)
                 real_verifier = "anthropic/red-team-v1"
                 prompt = f"""
 You are the AION OS Red Team Verifier. Analyze this NixOS configuration proposal for security vulnerabilities:
 ```nix
-{candidate_config}
+{safe_candidate_config}
 ```
 If you find ANY critical vulnerability (e.g., exposing roots, disabling firewalls, malicious curls, reverse shells), reply with EXACTLY 'REJECTED: <reason>'.
 Otherwise, reply with EXACTLY 'APPROVED'.

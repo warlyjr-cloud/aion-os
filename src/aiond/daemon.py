@@ -9,8 +9,10 @@ import sys
 import time
 import traceback
 from pathlib import Path
+from typing import Any, cast
 
 from audit import AuditLog
+from security.secrets import SecretConfig, ensure_public_safe_payload
 from vek.engine import EvolutionEngine
 from immune_memory.monitor import SystemMonitor
 from evolution.polymorph import polymorph_system
@@ -24,6 +26,7 @@ def _project_root() -> Path:
 
 
 def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
+    config = SecretConfig.from_environment()
     state_root = project_root / ".aion-state"
     stopped = (state_root / "STOP").exists()
     
@@ -38,12 +41,13 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
 
     # 1. Start Immune System Monitor
     monitor = SystemMonitor(project_root)
-    immune_reaction = monitor.check_health_and_react()
+    monitor_runtime = cast(Any, monitor)
+    immune_reaction: dict[str, Any] | None = cast(dict[str, Any] | None, monitor_runtime.check_health_and_react())
     
-    processed_intents = []
+    processed_intents: list[dict[str, Any]] = []
     if not stopped:
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            futures = {}
+            futures: dict[concurrent.futures.Future[Any], Path] = {}
             for intent_file in inbox_dir.glob("*.txt"):
                 objective = intent_file.read_text(encoding="utf-8").strip()
                 if objective:
@@ -67,7 +71,7 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
     if not stopped and random.random() < 0.1:
         polymorph_target = polymorph_system(project_root)
         
-    return {
+    sanitized_result = ensure_public_safe_payload({
         "service": "aiond",
         "healthy": not stopped,
         "mode": "simulation-only" if os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation" else "real",
@@ -75,29 +79,31 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
         "processed_intents": processed_intents,
         "immune_reaction": immune_reaction,
         "polymorphism_target": str(polymorph_target) if polymorph_target else None,
-    }
+        "secret_config_present": bool(config.provider_api_key or config.oracle_api_key or config.fleet_manager_endpoint or config.oracle_endpoint),
+    })
+    return cast(dict[str, object], sanitized_result)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="AION local control daemon")
     parser.add_argument("--once", action="store_true", help="perform one health check and exit")
     parser.add_argument("--interval", type=float, default=5.0)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     root = _project_root()
     if args.once:
         state_root = root / ".aion-state"
         print(json.dumps(run_once(root, AuditLog(state_root / "audit.jsonl")), sort_keys=True))
         return
-        
+
     quantum_mount = root / ".aion-state" / "quantum"
     mount_quantum_fs(str(quantum_mount))
-    
+
     dilation_engine = TimeDilationEngine(threshold_percent=60.0)
     dilation_engine.start()
-    
+
     state_root = root / ".aion-state"
     log = AuditLog(state_root / "audit.jsonl")
-    
+
     running = True
 
     def stop_handler(_signum: int, _frame: object) -> None:
@@ -114,6 +120,10 @@ def main() -> None:
             print(f"CRITICAL ERROR in daemon heartbeat: {e}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
         time.sleep(max(args.interval, 0.1))
+
+
+def start_daemon(argv: list[str] | None = None) -> None:
+    main(argv)
 
 
 if __name__ == "__main__":

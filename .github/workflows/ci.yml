@@ -47,3 +47,21 @@ jobs:
           AION_RUNTIME_MODE: simulation
           AION_ALLOW_HOST_MUTATION: "0"
         run: uv run --frozen python -m pytest
+
+      - name: Verify README workflow
+        env:
+          AION_RUNTIME_MODE: simulation
+          AION_ALLOW_HOST_MUTATION: "0"
+        run: uv run --frozen python scripts/verify_readme.py
+
+      - name: Verify public release workflow
+        env:
+          AION_RUNTIME_MODE: simulation
+          AION_ALLOW_HOST_MUTATION: "0"
+        run: uv run --frozen python scripts/verify_public_release.py
+
+      - name: Verify deployment workflow
+        env:
+          AION_RUNTIME_MODE: simulation
+          AION_ALLOW_HOST_MUTATION: "0"
+        run: uv run --frozen python scripts/verify_deployment.py

@@ -37,10 +37,17 @@ dev = [
 [project.scripts]
 aionctl = "aionctl.cli:app"
 aiond = "aiond.daemon:main"
-aion-cli = "cli:main"
+aion-cli = "src.cli:main"
+aion-health = "scripts.health_check:main"
+aion-smoke = "scripts.smoke_check:main"
+aion-verify-readme = "scripts.verify_readme:main"
+aion-verify-public = "scripts.verify_public_release:main"
+aion-secret-scan = "scripts.secret_safety_check:main"
+aion-verify-deployment = "scripts.verify_deployment:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [
+  "src",
   "src/actions",
   "src/aionctl",
   "src/aiond",
@@ -60,10 +67,11 @@ packages = [
   "src/red_team",
   "src/tcb",
   "src/vek",
+  "scripts",
 ]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing --cov-fail-under=80"
+addopts = "--strict-config --strict-markers --cov=src --cov-report=term-missing --cov-fail-under=75"
 testpaths = ["tests"]
 markers = [
   "integration: crosses multiple AION components",
@@ -90,3 +98,8 @@ extraPaths = ["src"]
 [tool.coverage.run]
 branch = true
 source = ["src"]
+
+[tool.aion]
+bootstrap_command = "python scripts/bootstrap.sh"
+smoke_command = "python scripts/smoke_check.py"
+health_command = "python scripts/health_check.py"

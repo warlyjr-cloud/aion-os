@@ -1,14 +1,18 @@
-import os
 import json
+
 from anthropic import Anthropic
+
 from intent.contracts import IntentContract
+from security.secrets import SecretConfig, load_secret, redact_sensitive_text
+
 from .base import CandidateProposal
 
 class AnthropicProvider:
     identity = "anthropic/claude-3-5-sonnet-20241022"
 
     def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        config = SecretConfig.from_environment()
+        self.api_key = api_key or load_secret("ANTHROPIC_API_KEY", env_var="ANTHROPIC_API_KEY") or config.provider_api_key
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY is required in environment variables")
         self.client = Anthropic(api_key=self.api_key)
@@ -59,5 +63,5 @@ Do not return any other text outside the JSON block. Valid action_types: package
                 )
             return proposals
         except Exception as e:
-            print(f"[AnthropicProvider] Failed to generate proposals: {e}")
+            print(f"[AnthropicProvider] Failed to generate proposals: {redact_sensitive_text(str(e))}")
             return []
