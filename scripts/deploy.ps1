@@ -39,10 +39,12 @@ function Copy-ProjectToRemote {
 }
 
 function Write-RemoteEnvFile {
-	$envCommand = "cat > '$RemotePath/.env' <<'EOF'
+	$envCommand = @"
+cat > '$RemotePath/.env' <<EOF
 DOMAIN=$Domain
 GITHUB_REPOSITORY=$ImageRepository
-EOF"
+EOF
+"@
 	Invoke-RemoteCommand $envCommand
 }
 
