@@ -68,8 +68,9 @@ aion-verify-deployment
 ## Production deployment options
 - Local demo: `docker compose up --build`
 - Remote demo stack: `docker compose -f deploy/docker-compose.prod.yml up --build`
-- Remote server deployment: `powershell.exe -NoProfile -File scripts/deploy.ps1 -Host root@your-server -RemotePath /opt/aion-os`
-- GitHub Container Registry publication via `.github/workflows/deploy.yml`
+- Remote server deployment: `powershell.exe -NoProfile -File scripts/deploy.ps1 -RemoteHost root@your-server -RemotePath /opt/aion-os`
+- GitHub Container Registry publication and remote deployment via `.github/workflows/deploy.yml`
+- Server bootstrap for Ubuntu/Debian: `sudo bash scripts/prepare-server.sh`
 
 ## Repository map
 - `kernel/` — Rust microkernel scaffold and target configuration.

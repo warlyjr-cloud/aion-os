@@ -18,8 +18,20 @@ The repository includes a PowerShell deployment helper at `scripts/deploy.ps1` f
 
 Example:
 ```powershell
-powershell.exe -NoProfile -File scripts/deploy.ps1 -Host root@your-server -RemotePath /opt/aion-os
+powershell.exe -NoProfile -File scripts/deploy.ps1 -RemoteHost root@your-server -RemotePath /opt/aion-os
+```
+
+For automated deployments from GitHub Actions, configure these repository secrets:
+- `REMOTE_HOST`
+- `REMOTE_USER`
+- `REMOTE_SSH_PRIVATE_KEY`
+- `REMOTE_PATH` (optional; defaults to `/opt/aion-os`)
+- `DOMAIN`
+
+Before the first deployment, prepare the server with:
+```bash
+sudo bash scripts/prepare-server.sh
 ```
 
 ## Container publishing
-The repository includes `.github/workflows/deploy.yml`, which builds and pushes the dashboard image to GitHub Container Registry for remote deployment.
+The repository includes `.github/workflows/deploy.yml`, which builds and pushes the dashboard image to GitHub Container Registry and deploys it to the remote host when the required secrets are configured.

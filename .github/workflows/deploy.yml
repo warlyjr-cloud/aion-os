@@ -14,7 +14,7 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -46,3 +46,27 @@ jobs:
 
       - name: Validate deployment compose file
         run: docker compose -f deploy/docker-compose.prod.yml config > /dev/null
+
+      - name: Deploy to remote host
+        if: ${{ secrets.REMOTE_HOST != '' && secrets.REMOTE_USER != '' && secrets.REMOTE_SSH_PRIVATE_KEY != '' && secrets.DOMAIN != '' }}
+        env:
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_PRIVATE_KEY: ${{ secrets.REMOTE_SSH_PRIVATE_KEY }}
+          REMOTE_PATH: ${{ secrets.REMOTE_PATH || '/opt/aion-os' }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$REMOTE_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$REMOTE_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key "$REMOTE_USER@$REMOTE_HOST" "mkdir -p '$REMOTE_PATH/deploy'"
+          scp -i ~/.ssh/deploy_key deploy/docker-compose.prod.yml "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/deploy/docker-compose.prod.yml"
+          scp -i ~/.ssh/deploy_key deploy/Caddyfile "$REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/deploy/Caddyfile"
+          ssh -i ~/.ssh/deploy_key "$REMOTE_USER@$REMOTE_HOST" "cat > '$REMOTE_PATH/.env' <<EOF
+DOMAIN=$DOMAIN
+GITHUB_REPOSITORY=$GITHUB_REPOSITORY
+EOF
+cd '$REMOTE_PATH' && docker compose -f deploy/docker-compose.prod.yml pull && docker compose -f deploy/docker-compose.prod.yml up -d --remove-orphans"
