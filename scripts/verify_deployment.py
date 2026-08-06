@@ -6,6 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
+from src.dashboard.app import app
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -25,6 +29,10 @@ def main() -> None:
     smoke = run([sys.executable, "scripts/smoke_check.py"])
     verify = run([sys.executable, "scripts/verify_public_release.py"])
 
+    with TestClient(app) as client:
+        dashboard_health = client.get("/healthz")
+        dashboard_ready = client.get("/readyz")
+
     payload = {
         "project": "aion-os",
         "status": "ok",
@@ -32,6 +40,8 @@ def main() -> None:
             "health": health,
             "smoke": smoke,
             "public_release": verify,
+            "dashboard_health": dashboard_health.json(),
+            "dashboard_ready": dashboard_ready.json(),
         },
     }
     print(json.dumps(payload, indent=2, sort_keys=True))

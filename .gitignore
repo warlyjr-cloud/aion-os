@@ -24,3 +24,4 @@ result-*
 proofs/mut-*/
 *.iso
 *.qcow2
+.vs/

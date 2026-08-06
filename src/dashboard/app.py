@@ -1,99 +1,232 @@
+from __future__ import annotations
+
+# pyright: reportUnusedFunction=false
+
+import json
 import os
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, AsyncIterator, Dict, List
+
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import Dict, Any
 
-app = FastAPI(title="AION OS Dashboard")
-dashboard_dir = Path(__file__).parent
-templates = Jinja2Templates(directory=str(dashboard_dir / "templates"))
 
 def _get_project_root() -> Path:
-    return Path(os.environ.get("AION_PROJECT_ROOT", Path.cwd())).resolve()
+    root = os.environ.get("AION_PROJECT_ROOT")
+    if root:
+        return Path(root).expanduser().resolve()
+    return Path.cwd().resolve()
+
+
+def _get_state_dir() -> Path:
+    return _get_project_root() / ".aion-state"
+
+
+def _ensure_runtime_layout() -> None:
+    state_dir = _get_state_dir()
+    state_dir.mkdir(parents=True, exist_ok=True)
+    (state_dir / "mutations").mkdir(parents=True, exist_ok=True)
+    (state_dir / "logs").mkdir(parents=True, exist_ok=True)
+
 
 def _read_audit_log() -> List[Dict[str, Any]]:
-    audit_file = _get_project_root() / ".aion-state" / "audit.jsonl"
+    audit_file = _get_state_dir() / "audit.jsonl"
     if not audit_file.exists():
         return []
-    import json
-    logs = []
-    with open(audit_file, "r", encoding="utf-8") as f:
-        for line in f:
+
+    logs: List[Dict[str, Any]] = []
+    with audit_file.open("r", encoding="utf-8") as handle:
+        for line in handle:
             if line.strip():
                 try:
-                    logs.append(json.loads(line))
+                    payload = json.loads(line)
                 except json.JSONDecodeError:
-                    pass
+                    continue
+                logs.append(payload)
     return logs
 
+
 def _read_mutations() -> List[Dict[str, Any]]:
-    mutations_dir = _get_project_root() / ".aion-state" / "mutations"
+    mutations_dir = _get_state_dir() / "mutations"
     if not mutations_dir.exists():
         return []
-    import json
-    mutations = []
-    for m_file in mutations_dir.glob("*.json"):
-        with open(m_file, "r", encoding="utf-8") as f:
+
+    mutations: List[Dict[str, Any]] = []
+    for mutation_file in mutations_dir.glob("*.json"):
+        with mutation_file.open("r", encoding="utf-8") as handle:
             try:
-                mutations.append(json.load(f))
+                mutations.append(json.load(handle))
             except json.JSONDecodeError:
-                pass
-    # Mutacoes nao tem 'created_at' explicito na raiz do modelo as vezes, ordenar por ID ou metadata
-    return sorted(mutations, key=lambda x: x.get("mutation_id", ""), reverse=True)
+                continue
+    return sorted(mutations, key=lambda item: str(item.get("mutation_id", "")), reverse=True)
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    audit_logs = _read_audit_log()
-    mutations = _read_mutations()
-    pending = [m for m in mutations if m.get("state") == "awaiting_approval"]
-    history = [m for m in mutations if m.get("state") != "awaiting_approval"]
-    
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html", 
-        context={
-            "audit_logs": audit_logs[-50:], # Show last 50
-            "pending": pending,
-            "history": history
+
+def create_app() -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+        _ensure_runtime_layout()
+        yield
+
+    app = FastAPI(
+        title="AION OS Dashboard",
+        description="Investor-grade operations surface for the AION OS control plane.",
+        version=os.getenv("AION_DASHBOARD_VERSION", "0.1.0"),
+        lifespan=lifespan,
+    )
+    dashboard_dir = Path(__file__).parent
+    templates = Jinja2Templates(directory=str(dashboard_dir / "templates"))
+
+    @app.get("/healthz")
+    async def healthz() -> Dict[str, Any]:
+        return {
+            "status": "ok",
+            "service": "aion-dashboard",
+            "mode": os.getenv("AION_RUNTIME_MODE", "simulation"),
+            "project": "aion-os",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "project_root": str(_get_project_root()),
         }
-    )
 
-class GossipPayload(BaseModel):
-    mutation_id: str
-    proof: Dict[str, Any]
+    @app.get("/readyz")
+    async def readyz() -> JSONResponse:
+        state_dir = _get_state_dir()
+        ready = state_dir.exists() and (state_dir / "mutations").exists()
+        payload = {
+            "ready": ready,
+            "service": "aion-dashboard",
+            "state_dir": str(state_dir),
+        }
+        status_code = 200 if ready else 503
+        return JSONResponse(payload, status_code=status_code)
 
-@app.post("/grid/gossip")
-async def grid_gossip(payload: GossipPayload):
-    from grid.p2p import GridManager
-    manager = GridManager(_get_project_root())
-    return manager.receive_gossip(payload.model_dump())
+    @app.get("/api/status")
+    async def api_status() -> Dict[str, Any]:
+        mutations = _read_mutations()
+        pending = [mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"]
+        history = [mutation for mutation in mutations if mutation.get("state") != "awaiting_approval"]
+        return {
+            "project": "aion-os",
+            "status": "ready",
+            "mode": os.getenv("AION_RUNTIME_MODE", "simulation"),
+            "mutations": len(mutations),
+            "pending": len(pending),
+            "history": len(history),
+            "state_dir": str(_get_state_dir()),
+        }
 
-@app.get("/grid/status")
-async def grid_status():
-    from grid.p2p import GridManager
-    manager = GridManager(_get_project_root())
-    return {"peers": manager.get_peers()}
+    @app.get("/metrics")
+    async def metrics() -> PlainTextResponse:
+        mutations = _read_mutations()
+        pending = [mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"]
+        return PlainTextResponse(
+            "\n".join(
+                [
+                    "# HELP aion_dashboard_up Whether the dashboard is running",
+                    "# TYPE aion_dashboard_up gauge",
+                    "aion_dashboard_up 1",
+                    "# HELP aion_dashboard_mutations Total mutations discovered",
+                    "# TYPE aion_dashboard_mutations gauge",
+                    f"aion_dashboard_mutations {len(mutations)}",
+                    "# HELP aion_dashboard_pending_mutations Pending approvals",
+                    "# TYPE aion_dashboard_pending_mutations gauge",
+                    f"aion_dashboard_pending_mutations {len(pending)}",
+                ]
+            )
+        )
 
-class ComputePayload(BaseModel):
-    objective: str
-    context: str
+    @app.get("/", response_class=HTMLResponse)
+    async def index(request: Request) -> HTMLResponse:
+        audit_logs = _read_audit_log()
+        mutations = _read_mutations()
+        pending = [mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"]
+        history = [mutation for mutation in mutations if mutation.get("state") != "awaiting_approval"]
+        return templates.TemplateResponse(
+            request=request,
+            name="index.html",
+            context={
+                "audit_logs": audit_logs[-50:],
+                "pending": pending,
+                "history": history,
+            },
+        )
 
-@app.post("/grid/compute")
-async def grid_compute(payload: ComputePayload):
-    from providers.llm import AnthropicProvider
-    from intent import IntentContract
-    provider = AnthropicProvider()
-    contract = IntentContract(
-        objective_id="parasite-1",
-        objective=payload.objective,
-        context=payload.context,
-        expected_result="raw completion",
-        constraints=[], authorized_data=[], prohibited_data=[], acceptable_risk=1, resources={}, metrics={}, stop_criteria=[], permissions=[], approval_required=False, reversal="", assumptions=[]
-    )
-    candidates = provider.propose(contract)
-    if not candidates:
-        return {"status": "failed", "content": ""}
-    return {"status": "success", "content": candidates[0].configuration}
+    class GossipPayload(BaseModel):
+        mutation_id: str
+        proof: Dict[str, Any]
+
+    @app.post("/grid/gossip")
+    async def grid_gossip(payload: GossipPayload) -> JSONResponse:
+        try:
+            from grid.p2p import GridManager
+        except Exception as exc:  # pragma: no cover - defensive path
+            return JSONResponse({"status": "unavailable", "error": str(exc)}, status_code=503)
+
+        manager = GridManager(_get_project_root())
+        return JSONResponse(manager.receive_gossip(payload.model_dump()))
+
+    @app.get("/grid/status")
+    async def grid_status() -> Dict[str, Any]:
+        try:
+            from grid.p2p import GridManager
+        except Exception as exc:  # pragma: no cover - defensive path
+            return {"peers": [], "status": "unavailable", "error": str(exc)}
+
+        manager = GridManager(_get_project_root())
+        return {"peers": manager.get_peers(), "status": "ok"}
+
+    class ComputePayload(BaseModel):
+        objective: str
+        context: str
+
+    @app.post("/grid/compute")
+    async def grid_compute(payload: ComputePayload) -> Dict[str, Any]:
+        try:
+            from intent import IntentContract
+            from providers.llm import AnthropicProvider
+        except Exception as exc:  # pragma: no cover - defensive path
+            return {"status": "failed", "content": "", "error": str(exc)}
+
+        provider = AnthropicProvider()
+        contract = IntentContract(
+            objective_id="parasite-1",
+            objective=payload.objective,
+            context=payload.context,
+            expected_result="raw completion",
+            constraints=[],
+            authorized_data=[],
+            prohibited_data=[],
+            acceptable_risk=1,
+            resources={},
+            metrics={},
+            stop_criteria=[],
+            permissions=[],
+            approval_required=False,
+            reversal="",
+            assumptions=[],
+        )
+        candidates = provider.propose(contract)
+        if not candidates:
+            return {"status": "failed", "content": ""}
+        return {"status": "success", "content": candidates[0].configuration}
+
+    return app
+
+
+app = create_app()
+
+
+def main() -> None:
+    import uvicorn
+
+    host = os.getenv("AION_DASHBOARD_HOST", "0.0.0.0")
+    port = int(os.getenv("AION_DASHBOARD_PORT", "8000"))
+    log_level = os.getenv("AION_LOG_LEVEL", "info")
+    uvicorn.run(app, host=host, port=port, log_level=log_level)
+
+
+if __name__ == "__main__":
+    main()

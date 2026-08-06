@@ -38,6 +38,7 @@ dev = [
 aionctl = "aionctl.cli:app"
 aiond = "aiond.daemon:main"
 aion-cli = "src.cli:main"
+aion-dashboard = "src.dashboard.app:main"
 aion-health = "scripts.health_check:main"
 aion-smoke = "scripts.smoke_check:main"
 aion-verify-readme = "scripts.verify_readme:main"
@@ -53,6 +54,7 @@ packages = [
   "src/aiond",
   "src/audit",
   "src/capabilities",
+  "src/dashboard",
   "src/evaluator",
   "src/evolution",
   "src/executor",
