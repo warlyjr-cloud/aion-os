@@ -15,6 +15,10 @@ import androidx.core.app.NotificationCompat
 import com.aionos.edgenode.R
 import com.aionos.edgenode.jni.PoStNativeBridge
 import com.aionos.edgenode.jni.PoSTResult
+import com.aionos.edgenode.identity.WalletManager
+import com.aionos.edgenode.network.NetworkManager
+import com.aionos.edgenode.policy.PowerPolicyManager
+import com.aionos.edgenode.storage.ShardStorage
 import com.aionos.edgenode.model.PoStState
 import com.aionos.edgenode.model.PoStStatus
 import com.aionos.edgenode.ui.MainActivity
@@ -25,6 +29,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -45,6 +50,10 @@ class PoStDaemonService : Service() {
 
     private val binder = LocalBinder()
     private val nativeBridge = PoStNativeBridge()
+    private lateinit var walletManager: WalletManager
+    private lateinit var networkManager: NetworkManager
+    private lateinit var powerPolicyManager: PowerPolicyManager
+    private lateinit var shardStorage: ShardStorage
 
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
@@ -62,8 +71,39 @@ class PoStDaemonService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        walletManager = WalletManager()
+        networkManager = NetworkManager()
+        powerPolicyManager = PowerPolicyManager(this)
+        shardStorage = ShardStorage(this)
+        
         createNotificationChannel()
         acquireWakeLock()
+        
+        observeNetworkTasks()
+        observePowerPolicies()
+    }
+
+    private fun observeNetworkTasks() {
+        serviceScope.launch {
+            networkManager.observeNetworkTasks().collectLatest { task ->
+                if (!_stateFlow.value.isRunning && powerPolicyManager.isExecutionAllowed()) {
+                    startPoSt(ramMb = 32, iterations = task.iterations, seed = task.seed)
+                }
+            }
+        }
+    }
+
+    private fun observePowerPolicies() {
+        serviceScope.launch {
+            while (true) {
+                if (_stateFlow.value.isRunning && !powerPolicyManager.isExecutionAllowed()) {
+                    pausePoSt()
+                } else if (_stateFlow.value.status == PoStStatus.PAUSED && powerPolicyManager.isExecutionAllowed()) {
+                    resumePoSt()
+                }
+                kotlinx.coroutines.delay(5000)
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

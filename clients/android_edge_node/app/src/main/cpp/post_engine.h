@@ -38,7 +38,7 @@ struct PoSTContext {
 
 void secure_zero(void* ptr, size_t len);
 PoSTContext* allocate_post_context(int size_mb);
-ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_len, int iterations);
+ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_len, const uint8_t* shard_data, size_t shard_len, int iterations);
 void cancel_post(PoSTContext* ctx);
 void pause_post(PoSTContext* ctx);
 void resume_post(PoSTContext* ctx);

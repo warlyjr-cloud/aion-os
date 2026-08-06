@@ -5,9 +5,26 @@
 #include <chrono>
 #include <new>
 #include <mutex>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fstream>
+#include <string>
 
 namespace aion {
 namespace post {
+
+// Helper to read memory stats from the kernel
+size_t get_current_rss() {
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.substr(0, 6) == "VmRSS:") {
+            size_t val = std::stoul(line.substr(7));
+            return val * 1024; // Convert KB to Bytes
+        }
+    }
+    return 0;
+}
 
 void secure_zero(void* ptr, size_t len) {
     if (!ptr || len == 0) return;
@@ -35,6 +52,13 @@ PoSTContext* allocate_post_context(int size_mb) {
     }
     ctx->buffer = static_cast<uint8_t*>(ptr);
     ctx->buffer_size_bytes = size_bytes;
+
+    // Try to lock memory in RAM to prevent swapping
+    // Note: May fail on some Android versions due to RLIMIT_MEMLOCK
+    if (mlock(ctx->buffer, ctx->buffer_size_bytes) == 0) {
+        // Successfully "stolen" and pinned to physical RAM
+    }
+
     ctx->cancelled.store(false);
     ctx->paused.store(false);
     ctx->progress.store(0);
@@ -75,7 +99,7 @@ struct InUseGuard {
     }
 };
 
-ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_len, int iterations) {
+ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_len, const uint8_t* shard_data, size_t shard_len, int iterations) {
     ExecutionResult result{};
     std::memset(result.proof_digest, 0, 32);
     result.status = StatusCode::INVALID_PARAM;
@@ -103,15 +127,26 @@ ExecutionResult compute_post(PoSTContext* ctx, const uint8_t* seed, size_t seed_
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // Stage 1: Space Allocation & Seed Expansion
+    // Stage 1: Space Allocation & Shard Loading & Seed Expansion
     uint8_t h0[32];
     aion::crypto::SHA256::hash(seed, seed_len, h0);
 
     size_t num_blocks = ctx->buffer_size_bytes / 32;
-    std::memcpy(ctx->buffer, h0, 32);
+
+    // Load real shard data if provided
+    size_t bytes_to_copy = std::min(shard_len, ctx->buffer_size_bytes);
+    if (shard_data && bytes_to_copy > 0) {
+        std::memcpy(ctx->buffer, shard_data, bytes_to_copy);
+    } else {
+        std::memcpy(ctx->buffer, h0, 32);
+        bytes_to_copy = 32;
+    }
+
+    size_t start_block = bytes_to_copy / 32;
+    if (start_block == 0) start_block = 1;
 
     uint8_t block_input[40];
-    for (size_t i = 1; i < num_blocks; ++i) {
+    for (size_t i = start_block; i < num_blocks; ++i) {
         if (i % 512 == 0) {
             if (ctx->cancelled.load(std::memory_order_relaxed)) {
                 result.status = StatusCode::CANCELLED;
@@ -231,6 +266,7 @@ void release_post_context(PoSTContext* ctx) {
         });
     }
     if (ctx->buffer) {
+        munlock(ctx->buffer, ctx->buffer_size_bytes);
         secure_zero(ctx->buffer, ctx->buffer_size_bytes);
         free(ctx->buffer);
         ctx->buffer = nullptr;

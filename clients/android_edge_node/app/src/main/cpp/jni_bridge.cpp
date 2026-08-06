@@ -5,6 +5,8 @@
 #include <mutex>
 #include "post_engine.h"
 #include "sha256.h"
+#include <fstream>
+#include <string>
 
 #define LOG_TAG "AION_PoST_JNI"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -152,8 +154,93 @@ Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeComputePoSt(
         ctx,
         seed_bytes,
         32,
+        nullptr, // No real shard data provided
+        0,
         static_cast<int>(iterations)
     );
+
+    if (g_post_result_class == nullptr || g_post_result_constructor == nullptr) {
+        if (!init_post_result_cache(env)) {
+            return nullptr;
+        }
+    }
+
+    jbyteArray j_digest_array = env->NewByteArray(32);
+    if (j_digest_array != nullptr) {
+        env->SetByteArrayRegion(j_digest_array, 0, 32, reinterpret_cast<const jbyte*>(res.proof_digest));
+    }
+
+    char hex_str[65];
+    digest_to_hex(res.proof_digest, hex_str);
+    jstring j_hex_string = env->NewStringUTF(hex_str);
+
+    jobject result_obj = env->NewObject(
+        g_post_result_class,
+        g_post_result_constructor,
+        j_digest_array,
+        j_hex_string,
+        static_cast<jlong>(res.execution_time_ms),
+        static_cast<jlong>(res.allocated_ram_bytes),
+        static_cast<jint>(res.iterations_completed),
+        static_cast<jint>(static_cast<int32_t>(res.status))
+    );
+
+    return result_obj;
+}
+
+JNIEXPORT jobject JNICALL
+Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeComputePoStWithData(
+    JNIEnv *env,
+    jobject thiz,
+    jlong handle,
+    jbyteArray seed_array,
+    jbyteArray shard_array,
+    jint iterations
+) {
+    if (handle == 0L) {
+        throw_java_exception(env, "java/lang/IllegalArgumentException", "Native handle cannot be zero.");
+        return nullptr;
+    }
+
+    if (seed_array == nullptr) {
+        throw_java_exception(env, "java/lang/IllegalArgumentException", "Seed byte array cannot be null.");
+        return nullptr;
+    }
+
+    jsize seed_len = env->GetArrayLength(seed_array);
+    if (seed_len != 32) {
+        throw_java_exception(env, "java/lang/IllegalArgumentException", "Seed byte array must be exactly 32 bytes.");
+        return nullptr;
+    }
+
+    aion::post::PoSTContext* ctx = reinterpret_cast<aion::post::PoSTContext*>(handle);
+    if (ctx == nullptr || ctx->buffer == nullptr || ctx->buffer_size_bytes == 0) {
+        throw_java_exception(env, "java/lang/IllegalStateException", "Native memory buffer is uninitialized or freed.");
+        return nullptr;
+    }
+
+    uint8_t seed_bytes[32];
+    env->GetByteArrayRegion(seed_array, 0, 32, reinterpret_cast<jbyte*>(seed_bytes));
+
+    uint8_t* shard_ptr = nullptr;
+    jsize shard_len = 0;
+    if (shard_array != nullptr) {
+        shard_len = env->GetArrayLength(shard_array);
+        shard_ptr = reinterpret_cast<uint8_t*>(env->GetByteArrayElements(shard_array, nullptr));
+    }
+
+    aion::post::ExecutionResult res = aion::post::compute_post(
+        ctx,
+        seed_bytes,
+        32,
+        shard_ptr,
+        static_cast<size_t>(shard_len),
+        static_cast<int>(iterations)
+    );
+
+    if (shard_array != nullptr && shard_ptr != nullptr) {
+        env->ReleaseByteArrayElements(shard_array, reinterpret_cast<jbyte*>(shard_ptr), JNI_ABORT);
+    }
 
     if (g_post_result_class == nullptr || g_post_result_constructor == nullptr) {
         if (!init_post_result_cache(env)) {
@@ -229,6 +316,27 @@ Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeGetProgress(
     if (handle == 0L) return 0;
     aion::post::PoSTContext* ctx = reinterpret_cast<aion::post::PoSTContext*>(handle);
     return static_cast<jint>(ctx->progress.load(std::memory_order_relaxed));
+}
+
+JNIEXPORT jlong JNICALL
+Java_com_aionos_edgenode_jni_PoStNativeBridge_nativeGetPhysicalMemoryUsage(
+    JNIEnv *env,
+    jobject thiz
+) {
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.substr(0, 6) == "VmRSS:") {
+            // Find the first digit
+            size_t start = line.find_first_of("0123456789");
+            if (start != std::string::npos) {
+                size_t end = line.find_first_not_of("0123456789", start);
+                std::string val_str = line.substr(start, end - start);
+                return static_cast<jlong>(std::stoul(val_str) * 1024);
+            }
+        }
+    }
+    return 0L;
 }
 
 JNIEXPORT void JNICALL

@@ -29,6 +29,8 @@ import com.aionos.edgenode.R
 import com.aionos.edgenode.model.PoStState
 import com.aionos.edgenode.model.PoStStatus
 import com.aionos.edgenode.service.PoStDaemonService
+import com.aionos.edgenode.identity.WalletManager
+import com.aionos.edgenode.network.NetworkManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -42,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     private var daemonService: PoStDaemonService? = null
     private var isBound = false
     private var observationJob: Job? = null
+    private val walletManager = WalletManager()
+    private val networkManager = NetworkManager()
 
     private lateinit var tvStatus: TextView
     private lateinit var etRam: EditText
@@ -56,6 +60,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvHashRate: TextView
     private lateinit var tvProofDigest: TextView
     private lateinit var tvErrorMessage: TextView
+    
+    // New UI Elements
+    private lateinit var tvAionId: TextView
+    private lateinit var tvBalance: TextView
+    private lateinit var tvPeers: TextView
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -224,6 +233,58 @@ class MainActivity : AppCompatActivity() {
             addView(contentLayout)
         }
         mainContainer.addView(headerCard)
+
+        // Wallet & Identity Card
+        val identityCard = createCardView().apply {
+            val contentLayout = LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                val pad = dpToPx(16)
+                setPadding(pad, pad, pad, pad)
+
+                tvAionId = TextView(this@MainActivity).apply {
+                    text = "ID: ${walletManager.getShortId()}"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor("#1C1B1F".toColorInt())
+                }
+                addView(tvAionId)
+
+                val balanceRow = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dpToPx(4), 0, 0)
+                }
+                balanceRow.addView(TextView(this@MainActivity).apply {
+                    text = "Balance: "
+                    setTextColor("#49454F".toColorInt())
+                })
+                tvBalance = TextView(this@MainActivity).apply {
+                    text = "${walletManager.getSimulatedBalance()} AION"
+                    setTextColor("#6750A4".toColorInt())
+                    setTypeface(null, Typeface.BOLD)
+                }
+                balanceRow.addView(tvBalance)
+                addView(balanceRow)
+
+                val networkRow = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dpToPx(4), 0, 0)
+                }
+                networkRow.addView(TextView(this@MainActivity).apply {
+                    text = "Peers: "
+                    setTextColor("#49454F".toColorInt())
+                })
+                tvPeers = TextView(this@MainActivity).apply {
+                    text = "${networkManager.getPeerCount()}"
+                    setTextColor("#49454F".toColorInt())
+                }
+                networkRow.addView(tvPeers)
+                addView(networkRow)
+            }
+            addView(contentLayout)
+        }
+        mainContainer.addView(identityCard)
 
         // Configuration & Control Card
         val controlCard = createCardView().apply {

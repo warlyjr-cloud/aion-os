@@ -27,6 +27,13 @@ class PoStNativeBridge {
         iterations: Int
     ): PoSTResult?
 
+    private external fun nativeComputePoStWithData(
+        handle: Long,
+        seed: ByteArray,
+        shardData: ByteArray?,
+        iterations: Int
+    ): PoSTResult?
+
     private external fun nativeReleaseMemory(handle: Long)
 
     private external fun nativeCancelPoSt(handle: Long)
@@ -36,6 +43,15 @@ class PoStNativeBridge {
     private external fun nativeResumePoSt(handle: Long)
 
     private external fun nativeGetProgress(handle: Long): Int
+
+    private external fun nativeGetPhysicalMemoryUsage(): Long
+
+    /**
+     * Returns the actual physical RAM (Resident Set Size) used by the process in bytes.
+     */
+    fun getPhysicalMemoryUsage(): Long {
+        return nativeGetPhysicalMemoryUsage()
+    }
 
     /**
      * Allocates native physical RAM (in Megabytes) for Space-Time commitment.
@@ -73,6 +89,29 @@ class PoStNativeBridge {
             require(iterations > 0) { "Iteration count must be greater than zero." }
 
             return nativeComputePoSt(handle, seed, iterations)
+                ?: throw IllegalStateException("Native computation failed to return a valid PoSTResult object.")
+        } finally {
+            lock.readLock().unlock()
+        }
+    }
+
+    /**
+     * Computes Proof-of-Space-Time over real shard data.
+     */
+    fun computePoStWithData(handle: Long, seed: ByteArray, shardData: ByteArray, iterations: Int): PoSTResult {
+        if (handle == 0L) {
+            throw IllegalStateException("Handle released or invalid")
+        }
+        val lock = handleLocks[handle] ?: throw IllegalStateException("Handle released or invalid")
+        lock.readLock().lock()
+        try {
+            if (!activeHandles.contains(handle)) {
+                throw IllegalStateException("Handle released or invalid")
+            }
+            require(seed.size == 32) { "Seed byte array must be exactly 32 bytes." }
+            require(iterations > 0) { "Iteration count must be greater than zero." }
+
+            return nativeComputePoStWithData(handle, seed, shardData, iterations)
                 ?: throw IllegalStateException("Native computation failed to return a valid PoSTResult object.")
         } finally {
             lock.readLock().unlock()
