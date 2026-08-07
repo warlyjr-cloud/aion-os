@@ -19,7 +19,7 @@ These instructions apply to the entire repository and complement the user's glob
 - Use Python 3.12 semantics and keep compatibility with newer supported Python releases.
 - Prefer small deterministic modules with explicit error handling.
 - Add or update tests for behavior changes. Run `python -m pytest`, `ruff check .`, and `pyright` when available.
-- Do not claim Nix, VM, container, or security-tool validation unless the corresponding command ran successfully.
+- Do not claim build, VM, container, or security-tool validation unless the corresponding command ran successfully.
 
 ## Changes and review
 

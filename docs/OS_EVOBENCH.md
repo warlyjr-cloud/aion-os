@@ -26,7 +26,7 @@ Guardrails (`constitutional_violation=0`, sem acesso reservado, sem fraude, roll
 
 ## Baselines
 
-NixOS manual, NixOS + agente genérico, AION sem população, sem memória, sem Model Council e completo. Toda comparação fixa hardware/ambiente, budget e versão. Testes reservados são custodiados fora do alcance da candidata.
+Configuração declarativa manual (ex.: NixOS, como referência externa de mercado), configuração declarativa + agente genérico, AION sem população, sem memória, sem Model Council e completo. Toda comparação fixa hardware/ambiente, budget e versão. Testes reservados são custodiados fora do alcance da candidata.
 
 ## Validade
 

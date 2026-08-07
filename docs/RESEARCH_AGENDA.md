@@ -10,7 +10,7 @@ Um sistema operacional baseado em Linux declarativo capaz de demonstrar autoaper
 - **H2:** busca populacional/Pareto supera mutação única em retenção, diversidade e generalização sob budget equivalente.
 - **H3:** proof bundles e avaliadores independentes reduzem promoção de regressões/fraudes.
 - **H4:** memória com proveniência, quarentena e promoção resiste melhor a poisoning que memória gravada diretamente pelo agente.
-- **H5:** NixOS generations tornam reconstrução/rollback mais confiáveis que mudanças imperativas equivalentes.
+- **H5:** gerações declarativas com estado versionado (na linha da abordagem popularizada pelo NixOS) tornam reconstrução/rollback mais confiáveis que mudanças imperativas equivalentes.
 - **H6:** evolução do scaffolding (RSI-2/3) pode acumular ganho em tarefas ocultas sem alterar o TCB.
 
 ## Perguntas
@@ -46,7 +46,7 @@ Sucesso e generalização; retenção/regressão; build/boot/health; latência/c
 2. EvoBench-5 reproduzível e ataques de falsificação/leakage.
 3. Comparação memória direta versus quarantine+corroboration.
 4. População/Pareto versus candidata única sob budget fixo.
-5. NixOS Lab: build, boot, falha de serviço e rollback.
+5. AION Build Lab: build, boot, falha de serviço e rollback usando a ferramenta de build própria do AION.
 6. Estudo longitudinal multi-provider, com hidden holdout.
 
 ## Ameaças à validade

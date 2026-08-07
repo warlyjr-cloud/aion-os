@@ -13,9 +13,9 @@ uv run pytest
 
 Property tests devem cobrir transições inválidas, capability ausente, proteção do TCB, rollback válido e memória sem authority escalation.
 
-## NixOS
+## Build e ambiente
 
-Nix Flakes, `nix flake check`, `nixosTest`, Alejandra, Statix, Deadnix, VM build/boot/rollback e serviço systemd. Execute apenas em Linux/WSL com Nix; não instale globalmente sem autorização. Nenhum arquivo Nix é “validado” até os comandos concluírem.
+Ferramentas próprias do AION para build, verificação e rollback de ambiente/VM, mais serviço systemd. Execute apenas em Linux/WSL; não instale globalmente sem autorização. Nada é “validado” até os comandos concluírem com sucesso.
 
 ## Segurança e supply chain
 

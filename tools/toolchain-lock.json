@@ -47,29 +47,24 @@
   },
   "security": {
     "gitleaks": {
-      "constraint": "flake.lock:nixpkgs",
-      "source": "https://github.com/gitleaks/gitleaks"
+      "constraint": "==8.30.1",
+      "source": "https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1"
     },
     "grype": {
-      "constraint": "flake.lock:nixpkgs",
-      "source": "https://github.com/anchore/grype"
+      "constraint": "==0.116.1",
+      "source": "https://github.com/anchore/grype/releases/tag/v0.116.1"
     },
     "osv-scanner": {
-      "constraint": "flake.lock:nixpkgs",
-      "source": "https://github.com/google/osv-scanner"
+      "constraint": "==2.5.0",
+      "source": "https://github.com/google/osv-scanner/releases/tag/v2.5.0"
     },
     "semgrep": {
-      "constraint": "flake.lock:nixpkgs",
-      "source": "https://github.com/semgrep/semgrep"
+      "constraint": "==1.172.0",
+      "source": "https://github.com/semgrep/semgrep/releases/tag/v1.172.0"
     },
     "syft": {
-      "constraint": "flake.lock:nixpkgs",
-      "source": "https://github.com/anchore/syft"
+      "constraint": "==1.50.0",
+      "source": "https://github.com/anchore/syft/releases/tag/v1.50.0"
     }
-  },
-  "nix": {
-    "input": "NixOS/nixpkgs",
-    "revision": "b3aad468604d3e488d627c0b43984eb60e75e782",
-    "nar_hash": "sha256-eplAP+rorKKd0gNjV3rA6+0WMzb1X1i16F5m5pASnjA="
   }
 }

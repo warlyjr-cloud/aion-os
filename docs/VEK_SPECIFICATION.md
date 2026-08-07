@@ -41,4 +41,4 @@ Toda transição é total sobre entradas válidas, rejeita origem/estado inesper
 
 ## MVP versus futuro
 
-MVP: duas candidatas mock, `CandidateArchive`, `LineageGraph`, `ParetoSelector`, estado local e provas com hashes. Futuro: builders Nix/VM reais, novelty search, recombinação controlada, canary, attestations e evolução RSI-3/3.5. Nenhuma dessas capacidades futuras é inferida pelo scaffold.
+MVP: duas candidatas mock, `CandidateArchive`, `LineageGraph`, `ParetoSelector`, estado local e provas com hashes. Futuro: builders próprios (AION-native)/VM reais, novelty search, recombinação controlada, canary, attestations e evolução RSI-3/3.5. Nenhuma dessas capacidades futuras é inferida pelo scaffold.

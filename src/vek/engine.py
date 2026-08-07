@@ -71,7 +71,7 @@ class EvolutionEngine:
         contract = IntentContract(
             objective_id=objective_id,
             objective=normalized,
-            context="local-first NixOS evolution proposal",
+            context="local-first AION evolution proposal",
             expected_result=f"validated declarative capability proposal for {package}",
             constraints=[
                 "no host package installation",

@@ -26,6 +26,6 @@
   "notes": [
     "This inventory is not a complete SBOM.",
     "CI-generated SPDX JSON is the source for transitive dependency review.",
-    "Nix closure licenses must be reviewed from the built closure before distribution."
+    "Package licenses pinned in tools/toolchain-lock.json must be reviewed before distribution."
   ]
 }

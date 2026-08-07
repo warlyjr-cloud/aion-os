@@ -25,4 +25,4 @@ Não copiar credenciais, chaves ou dados pessoais desnecessários. Egress é den
 
 ## Estado do MVP
 
-Interfaces e fixtures podem ser simuladas. VM NixOS, shadow de carga, chaos, canary e observabilidade real permanecem pendentes até comandos e relatórios correspondentes.
+Interfaces e fixtures podem ser simuladas. VM com ferramentas de build próprias do AION, shadow de carga, chaos, canary e observabilidade real permanecem pendentes até comandos e relatórios correspondentes.

@@ -2,6 +2,8 @@
 
 Atualizado em **2026-08-02**. Este handoff registra o estado observado durante o bootstrap; reconcilie-o com a saída final de testes antes de continuar.
 
+> **Addendum 2026-08-07**: o diretório `nix/`, `flake.nix` e `flake.lock` foram removidos do projeto; `.github/workflows/nix.yml` e `.claude/agents/nixos-engineer.md` (renomeado `lab-engineer.md`) também. As menções a Nix abaixo são registro histórico do estado em 2026-08-02 e não devem ser usadas como instrução atual. Note que `src/executor/safe.py` ainda tem um caminho de execução real via `nix build` em WSL fora do modo simulation — isso é uma questão de segurança em aberto, não coberta por esta limpeza.
+
 ## Resumo executivo
 
 O repositório contém um MVP Python offline/simulation-only, estrutura Nix, schemas, EvoBench, testes e documentação normativa. A presença dos arquivos não prova que suíte Python, Nix, VM, ferramentas de segurança ou demo passaram. A configuração Claude Code é opt-in e seus hooks foram testados apenas com payloads sintéticos.
@@ -89,7 +91,7 @@ Gitleaks, Semgrep, OSV-Scanner, Syft, Grype, CodeQL e Trivy locais; `nix flake c
 
 ## Próxima tarefa recomendada
 
-Em ambiente Linux/WSL separado, executar `nix flake check` e depois VM build/boot/rollback. Em seguida, executar os scanners locais, revisar humanamente a Constituição/TCB e substituir evidências simuladas de build/teste por resultados isolados antes de ampliar autoridade.
+Em ambiente Linux/WSL separado, executar build/boot/rollback de VM real. Em seguida, executar os scanners locais, revisar humanamente a Constituição/TCB e substituir evidências simuladas de build/teste por resultados isolados antes de ampliar autoridade.
 
 ## Comandos de continuidade
 

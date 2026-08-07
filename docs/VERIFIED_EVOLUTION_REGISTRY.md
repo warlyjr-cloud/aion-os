@@ -6,7 +6,7 @@ Catálogo de skills, capabilities, mutações, provas e compatibilidade. Não ha
 
 ## Manifesto de entrada
 
-ID/version, tipo, autores, licença, source digest, artefatos, SBOM, dependências, hardware/NixOS, schemas, capabilities requeridas, política de rede, métricas, regressões conhecidas, proof references, assinaturas e revogações.
+ID/version, tipo, autores, licença, source digest, artefatos, SBOM, dependências, hardware/ambiente, schemas, capabilities requeridas, política de rede, métricas, regressões conhecidas, proof references, assinaturas e revogações.
 
 ## Ingestão local
 

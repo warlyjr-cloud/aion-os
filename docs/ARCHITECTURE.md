@@ -2,7 +2,7 @@
 
 ## Contexto e fronteiras
 
-O AION é uma camada de evolução sobre Linux/NixOS; não substitui o kernel. A fronteira principal separa componentes probabilísticos e não confiáveis (modelos, planners, conteúdo externo) da autoridade determinística (TCB, policy enforcement, executor tipado, auditoria e rollback).
+O AION é uma camada de evolução sobre Linux; não substitui o kernel. A fronteira principal separa componentes probabilísticos e não confiáveis (modelos, planners, conteúdo externo) da autoridade determinística (TCB, policy enforcement, executor tipado, auditoria e rollback).
 
 ```text
                     plano de dados não confiável
@@ -48,7 +48,7 @@ User -> Intent -> Provider/Model Council -> Candidate Population
 ## Modelo de implantação
 
 - MVP local: processo sem privilégio, MockProvider, SQLite/JSONL e temporários.
-- Lab: VM NixOS/QEMU com serviço systemd, após validação real.
+- Lab: VM Linux/QEMU com serviço systemd, após validação real.
 - Futuro: Podman rootless, Wasmtime e Firecracker conforme risco; TPM/measured boot como defesa adicional.
 
 ## Falhas seguras

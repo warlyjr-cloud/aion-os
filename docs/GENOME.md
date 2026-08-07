@@ -2,7 +2,7 @@
 
 ## Definição
 
-Manifesto versionado do estado evolutivo necessário para reconstruir uma geração: configuração Nix, packages/services, schemas, policies referenciadas, capabilities, skills, provider routing, memória validada, evaluator versions e lineage.
+Manifesto versionado do estado evolutivo necessário para reconstruir uma geração: configuração de build/ambiente própria da AION, packages/services, schemas, policies referenciadas, capabilities, skills, provider routing, memória validada, evaluator versions e lineage.
 
 ## Propriedades
 
@@ -24,4 +24,4 @@ Sistema, capabilities, memória, skills e routing devem voltar de forma coordena
 
 ## MVP
 
-JSON local e hashes podem representar o genome. Migração, assinatura, storage tamper-evident e reconstrução Nix multi-máquina são pendentes.
+JSON local e hashes podem representar o genome. Migração, assinatura, storage tamper-evident e reconstrução multi-máquina com a ferramenta de build própria da AION são pendentes.

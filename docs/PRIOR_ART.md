@@ -50,7 +50,7 @@ Pesquisa atualizada em **2026-08-02**, priorizando papers, documentação e repo
 
 ## Síntese
 
-Os blocos necessários já existem separadamente: NixOS para estado/reversão; agent OSes para orquestração; DGM/Hyperagents para evolução; Wasmtime/Firecracker para isolamento; OPA para policy; SLSA/in-toto/Sigstore para proveniência; literatura adversarial para ataques. A hipótese diferenciadora do AION é integrar esses princípios em um gate de promoção multi-geração, com TCB fora do espaço evolutivo e evidência antes da autoridade. Isso ainda precisa ser demonstrado.
+Os blocos necessários já existem separadamente: NixOS ilustra o conceito de estado declarativo/reversão (sem que o AION dependa de Nix ou nixpkgs); agent OSes para orquestração; DGM/Hyperagents para evolução; Wasmtime/Firecracker para isolamento; OPA para policy; SLSA/in-toto/Sigstore para proveniência; literatura adversarial para ataques. A hipótese diferenciadora do AION é integrar esses princípios em um gate de promoção multi-geração, com TCB fora do espaço evolutivo e evidência antes da autoridade. Isso ainda precisa ser demonstrado.
 
 ## Regras de reutilização
 

@@ -20,7 +20,7 @@ body:
       options:
         - Simulation
         - AION Lab VM
-        - NixOS host
+        - WSL/container
         - Other isolated environment
     validations:
       required: true

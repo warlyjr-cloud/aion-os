@@ -13,4 +13,4 @@ Expected CI artifacts:
 
 Artifacts are retained for a short, explicit period by each workflow. A clean scan means only that the configured scanner found no matching issue in that run.
 
-'local-inventory.json' is an observation of the initial Windows host. Missing tools were not installed; the Nix, VM, and security validations therefore remain pending locally.
+'local-inventory.json' is an observation of the initial Windows host, dated before Nix was removed from this project. Missing tools were not installed; the VM and security validations therefore remain pending locally.

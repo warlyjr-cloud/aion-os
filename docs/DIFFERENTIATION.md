@@ -16,7 +16,7 @@ Outros sistemas usam IA para operar o computador ou orquestrar agentes. O AION f
 
 ## O que reutilizar
 
-- NixOS para estado declarativo, generations e rollback.
+- NixOS como referência de prior art para estado declarativo, generations e rollback (citação conceitual; AION não depende de NixOS).
 - microVM/VM/Wasm como camadas futuras de isolamento, sem tratá-las como prova automática.
 - SLSA, in-toto e Sigstore para formatos e mecanismos de proveniência, sem criptografia própria.
 - OPA/Rego como adaptador futuro, mantendo policy engine mínimo determinístico no MVP.

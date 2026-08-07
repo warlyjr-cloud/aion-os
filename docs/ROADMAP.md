@@ -22,10 +22,10 @@
 - [x] memory poisoning e prompt injection;
 - [x] baselines, seeds e relatório versionado.
 
-## P3 — NixOS Lab
+## P3 — Lab de build/rollback
 
-- [ ] módulo NixOS e serviço systemd;
-- [ ] `nix flake check`, VM build, boot e rollback executados;
+- [ ] módulo de configuração e serviço systemd nativos do AION;
+- [ ] verificação de build própria do AION, VM build, boot e rollback executados;
 - [ ] isolamento/egress e artifact capture validados.
 
 ## P4 — pesquisa avançada

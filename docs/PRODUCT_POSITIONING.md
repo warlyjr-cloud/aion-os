@@ -14,7 +14,7 @@ Desenvolvedores, pesquisadores de agentes/RSI, profissionais de DevOps, laborat�
 
 ## Formas de distribuição
 
-1. **Evolution Engine:** módulo instalável em NixOS existente; primeira adoção.
+1. **Evolution Engine:** módulo instalável sobre a ferramentação de build própria do AION; primeira adoção.
 2. **AION Lab:** VM para desenvolvimento, benchmark, homologação e red team.
 3. **AION OS:** distribuição completa futura, sem kernel próprio no MVP.
 
@@ -27,5 +27,5 @@ O usuário informa o objetivo; o AION produz candidatas, testa em isolamento, ex
 - chatbot empacotado como distribuição;
 - agente com shell root;
 - framework multiagente genérico;
-- substituto do NixOS;
+- substituto de ferramentas de build declarativo existentes no mercado;
 - licença para aplicar patches gerados por IA sem revisão.

@@ -25,4 +25,4 @@ Hooks são defesa adicional, não sandbox/TCB. Regex de shell pode ter falsos po
 
 ## Agentes
 
-Os nove agentes do projeto são somente leitura. Eles auditam arquitetura, NixOS, TCB, política, benchmark, red team, provas, memória e documentação. O agente que produz uma mutação nunca deve ser seu único verificador, e nenhum subagente pode substituir aprovação humana para arquivo protegido.
+Os nove agentes do projeto são somente leitura. Eles auditam arquitetura, o AION Lab, TCB, política, benchmark, red team, provas, memória e documentação. O agente que produz uma mutação nunca deve ser seu único verificador, e nenhum subagente pode substituir aprovação humana para arquivo protegido.
