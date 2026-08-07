@@ -9,6 +9,7 @@ from typing import Annotated, Any, cast
 
 import typer
 
+from capabilities import CapabilityGrant, CapabilityStore
 from immune_memory import MemoryStore
 from tcb import EvidenceVerifier
 from vek import EvolutionEngine
@@ -23,6 +24,7 @@ generations_app = typer.Typer(help="Inspect generations")
 proof_app = typer.Typer(help="Verify proof-carrying mutations")
 benchmark_app = typer.Typer(help="Run OS-EvoBench")
 autonomy_app = typer.Typer(help="Inspect autonomy controls")
+grants_app = typer.Typer(help="Issue, list, and revoke durable capability grants")
 
 app.add_typer(genome_app, name="genome")
 app.add_typer(memory_app, name="memory")
@@ -33,6 +35,11 @@ app.add_typer(generations_app, name="generations")
 app.add_typer(proof_app, name="proof")
 app.add_typer(benchmark_app, name="benchmark")
 app.add_typer(autonomy_app, name="autonomy")
+app.add_typer(grants_app, name="grants")
+
+
+def _grant_store() -> CapabilityStore:
+    return CapabilityStore(_root() / ".aion-state" / "capabilities.json")
 
 
 def _root() -> Path:
@@ -269,6 +276,46 @@ def stop() -> None:
     marker = _engine().state_root / "STOP"
     marker.write_text("human-requested\n", encoding="utf-8")
     _emit({"status": "stopped", "marker": str(marker)})
+
+
+@grants_app.command("issue")
+def grants_issue(
+    capability: str,
+    grantee: str,
+    objective_id: str,
+    ttl_minutes: Annotated[int, typer.Option("--ttl-minutes")] = 60,
+    max_uses: Annotated[int, typer.Option("--max-uses")] = 1,
+) -> None:
+    """Issue a durable capability grant to a specific tenant/team, ahead of
+    time, independent of any single plan()/promote() call."""
+    from datetime import UTC, datetime, timedelta
+    from uuid import uuid4
+
+    grant = CapabilityGrant(
+        grant_id=f"grant-{uuid4().hex[:12]}",
+        capability=capability,
+        grantee=grantee,
+        objective_id=objective_id,
+        expires_at=datetime.now(UTC) + timedelta(minutes=ttl_minutes),
+        remaining_uses=max_uses,
+    )
+    stored = _grant_store().issue(grant)
+    _emit(stored.model_dump(mode="json"))
+
+
+@grants_app.command("revoke")
+def grants_revoke(
+    grant_id: str,
+    actor: Annotated[str, typer.Option("--actor")],
+    reason: Annotated[str, typer.Option("--reason")],
+) -> None:
+    stored = _grant_store().revoke(grant_id, revoked_by=actor, reason=reason)
+    _emit(stored.model_dump(mode="json"))
+
+
+@grants_app.command("list")
+def grants_list() -> None:
+    _emit([grant.model_dump(mode="json") for grant in _grant_store().list_active()])
 
 
 if __name__ == "__main__":

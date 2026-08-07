@@ -93,3 +93,67 @@ def test_emergency_stop_fails_closed() -> None:
 def test_executor_never_accepts_free_shell() -> None:
     with pytest.raises(PermissionError, match="allowlist"):
         SafeExecutor().execute(action(action_type="shell.execute"))
+
+
+def _durable_grant(**overrides: object) -> CapabilityGrant:
+    values: dict[str, object] = {
+        "grant_id": "grant-durable-1",
+        "capability": "package.propose:ffmpeg",
+        "grantee": "team-video",
+        "objective_id": "obj-1",
+        "expires_at": datetime.now(UTC) + timedelta(minutes=5),
+        "remaining_uses": 2,
+    }
+    values.update(overrides)
+    return CapabilityGrant.model_validate(values)
+
+
+def test_capability_store_persists_and_authorizes_across_instances(tmp_path) -> None:
+    from capabilities import CapabilityStore
+
+    store_path = tmp_path / "capabilities.json"
+    CapabilityStore(store_path).issue(_durable_grant())
+
+    # A fresh instance (simulating a different process/request) must see it.
+    reloaded = CapabilityStore(store_path)
+    granted = reloaded.authorize(action(), grantee="team-video")
+    assert granted.grant_id == "grant-durable-1"
+
+
+def test_capability_store_enforces_real_expiration(tmp_path) -> None:
+    from capabilities import CapabilityError, CapabilityStore
+
+    store_path = tmp_path / "capabilities.json"
+    store = CapabilityStore(store_path)
+    store.issue(_durable_grant(expires_at=datetime.now(UTC) - timedelta(seconds=1)))
+
+    with pytest.raises(CapabilityError):
+        store.authorize(action(), grantee="team-video")
+
+
+def test_capability_store_enforces_remaining_uses(tmp_path) -> None:
+    from capabilities import CapabilityError, CapabilityStore
+
+    store_path = tmp_path / "capabilities.json"
+    store = CapabilityStore(store_path)
+    store.issue(_durable_grant(remaining_uses=1))
+
+    store.authorize(action(), grantee="team-video")
+    with pytest.raises(CapabilityError):
+        store.authorize(action(), grantee="team-video")
+
+
+def test_capability_store_revocation_blocks_future_authorization(tmp_path) -> None:
+    from capabilities import CapabilityError, CapabilityStore
+
+    store_path = tmp_path / "capabilities.json"
+    store = CapabilityStore(store_path)
+    store.issue(_durable_grant())
+
+    store.authorize(action(), grantee="team-video")
+    store.revoke("grant-durable-1", revoked_by="security-team", reason="incident response")
+
+    with pytest.raises(CapabilityError):
+        store.authorize(action(), grantee="team-video")
+
+    assert store.list_active() == []
