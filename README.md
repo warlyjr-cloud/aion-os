@@ -11,6 +11,12 @@ AION OS is an ambitious research and engineering project that combines a Rust mi
 - A deterministic runtime smoke path for local validation.
 - A Rust kernel scaffold under `kernel/` and a testable state-machine/TCB layer in `src/`.
 
+**See `docs/PROJECT_STATUS.md` for an honest, component-by-component
+breakdown of what's proven real (with evidence) vs. functional scaffold
+vs. stub/vision** — and `docs/PROOF_OF_REAL_EXECUTION.md` for the first
+end-to-end, non-simulated build/promote/rollback cycle. A concrete
+proposed product focus is in `docs/VERTICAL_USE_CASE.md`.
+
 ## Quick start
 
 ### 1. Bootstrap the environment
