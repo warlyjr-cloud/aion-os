@@ -65,6 +65,42 @@ def _read_mutations() -> list[dict[str, Any]]:
     return sorted(mutations, key=lambda item: str(item.get("mutation_id", "")), reverse=True)
 
 
+_PROOF_REPORT_NAMES = (
+    "policy-report.json",
+    "security-report.json",
+    "build-report.json",
+    "test-report.json",
+    "benchmark-report.json",
+    "adversarial-report.json",
+    "comparison.json",
+    "provenance.json",
+    "rollback-plan.json",
+    "post-promotion-report.json",
+)
+
+
+def _read_proof_bundle(mutation_id: str) -> dict[str, Any] | None:
+    """Read every report in a mutation's proof directory, so a caller can
+    see exactly why a candidate was approved or rejected - not just the
+    final state. Returns None if the mutation has no proof directory."""
+    if not mutation_id.startswith("mut-") or not mutation_id.replace("-", "").isalnum():
+        return None
+    proof_dir = _get_project_root() / "proofs" / mutation_id
+    if not proof_dir.is_dir():
+        return None
+
+    bundle: dict[str, Any] = {}
+    for name in _PROOF_REPORT_NAMES:
+        report_path = proof_dir / name
+        if not report_path.is_file():
+            continue
+        try:
+            bundle[name] = json.loads(report_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            bundle[name] = {"error": "unparseable report"}
+    return bundle
+
+
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
@@ -121,6 +157,37 @@ def create_app() -> FastAPI:
             "history": len(history),
             "state_dir": str(_get_state_dir()),
         }
+
+    @app.get("/api/mutations")
+    async def api_mutations() -> list[dict[str, Any]]:
+        """Full mutation records, not just counts - each one already
+        carries its own decision (selected_candidate_id, approved_by,
+        rejection_reason, state_history)."""
+        return _read_mutations()
+
+    @app.get("/api/mutations/{mutation_id}")
+    async def api_mutation_detail(mutation_id: str) -> JSONResponse:
+        """The actual decision, not just a status: the mutation record plus
+        every report in its proof bundle (policy, security/deterministic-
+        verifier verdict, council decision inside provenance, rollback
+        plan), and the slice of the hash-chained audit log for this
+        mutation_id."""
+        record = next(
+            (m for m in _read_mutations() if m.get("mutation_id") == mutation_id),
+            None,
+        )
+        if record is None:
+            return JSONResponse({"error": f"unknown mutation: {mutation_id}"}, status_code=404)
+        audit_events = [
+            entry for entry in _read_audit_log() if entry.get("mutation_id") == mutation_id
+        ]
+        return JSONResponse(
+            {
+                "record": record,
+                "proof": _read_proof_bundle(mutation_id),
+                "audit_events": audit_events,
+            }
+        )
 
     @app.get("/metrics")
     async def metrics() -> PlainTextResponse:
