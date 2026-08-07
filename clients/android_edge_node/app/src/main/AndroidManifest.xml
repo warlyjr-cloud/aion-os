@@ -18,7 +18,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-        <!-- Main UI Activity -->
+        <!-- Main UI Activity. Must be exported: it's the app's launcher
+             entry point (MAIN/LAUNCHER intent-filter below), which Android
+             requires to be exported to appear in the launcher. It exposes
+             no custom actions or control-plane extras beyond that.
+             nosemgrep: java.android.security.exported_activity.exported_activity -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">

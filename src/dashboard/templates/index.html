@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AION OS // CORE</title>
+    <!-- Tailwind Play CDN: a JIT compiler script, not a versioned/immutable
+         asset, so it cannot carry a static SRI integrity hash (Tailwind's
+         own docs mark the Play CDN as not recommended for production).
+         Residual risk accepted for this MVP dashboard; a proper fix is to
+         self-host a pinned, built Tailwind CSS bundle instead.
+         nosemgrep: html.security.audit.missing-integrity.missing-integrity -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=VT323&display=swap" rel="stylesheet">
     <style>
