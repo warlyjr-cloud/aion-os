@@ -158,7 +158,7 @@ class EvolutionEngine:
             ]
         )
         policy = PolicyEngine(ActionValidator(grants))
-        executor = SafeExecutor()
+        executor = SafeExecutor(self.project_root)
         policy_results: list[dict[str, str]] = []
         execution_results: list[dict[str, object]] = []
         for index, candidate in enumerate(candidates):
@@ -314,9 +314,28 @@ class EvolutionEngine:
 
         # This is the only place a real (non-simulated) host effect can occur,
         # and only after policy + human approval have both already passed.
-        execution_result = SafeExecutor().execute(promote_action).model_dump(mode="json")
+        execution_result = (
+            SafeExecutor(self.project_root).execute(promote_action).model_dump(mode="json")
+        )
         simulated = bool(execution_result["simulated"])
         if not simulated and execution_result["status"] != "success":
+            record.transition(MutationState.ARCHIVED)
+            self.mutations.save(record)
+            self.proofs.update_post_promotion(
+                mutation_id,
+                {
+                    "status": "promotion_failed",
+                    "simulated": False,
+                    "host_modified": False,
+                    "execution_result": execution_result,
+                },
+            )
+            self.audit.append(
+                "generation.promotion_failed",
+                actor="tcb-executor",
+                mutation_id=mutation_id,
+                details={"output": execution_result["output"]},
+            )
             raise RuntimeError(f"real promotion execution failed: {execution_result['output']}")
 
         record.transition(MutationState.PROMOTING)

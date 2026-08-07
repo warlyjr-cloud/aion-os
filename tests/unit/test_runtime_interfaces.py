@@ -237,6 +237,58 @@ def test_safe_executor_prefers_native_nix_over_wsl_hop(
     assert captured_argv == [["/usr/bin/nix", "build", "nixpkgs#ffmpeg"]]
 
 
+def test_safe_executor_dependency_bump_succeeds_when_tests_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import executor.safe as safe_module
+
+    monkeypatch.setenv("AION_RUNTIME_MODE", "real")
+    monkeypatch.setenv("AION_ALLOW_HOST_MUTATION", "1")
+    monkeypatch.setattr(safe_module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    (tmp_path / "uv.lock").write_text("original-lock-content", encoding="utf-8")
+
+    def fake_run(argv: list[str], **kwargs: object):
+        if "lock" in argv:
+            (tmp_path / "uv.lock").write_text("upgraded-lock-content", encoding="utf-8")
+        return safe_module.subprocess.CompletedProcess(args=argv, returncode=0, stdout="ok")
+
+    monkeypatch.setattr(safe_module.subprocess, "run", fake_run)
+
+    action = _make_action("dependency.bump", "anthropic")
+    result = safe_module.SafeExecutor(tmp_path).execute(action)
+
+    assert result.simulated is False
+    assert result.status == "success"
+    assert (tmp_path / "uv.lock").read_text(encoding="utf-8") == "upgraded-lock-content"
+
+
+def test_safe_executor_dependency_bump_reverts_lock_when_tests_fail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import executor.safe as safe_module
+
+    monkeypatch.setenv("AION_RUNTIME_MODE", "real")
+    monkeypatch.setenv("AION_ALLOW_HOST_MUTATION", "1")
+    monkeypatch.setattr(safe_module.shutil, "which", lambda name: f"/usr/bin/{name}")
+    (tmp_path / "uv.lock").write_text("original-lock-content", encoding="utf-8")
+
+    def fake_run(argv: list[str], **kwargs: object):
+        if "lock" in argv:
+            (tmp_path / "uv.lock").write_text("upgraded-lock-content", encoding="utf-8")
+            return safe_module.subprocess.CompletedProcess(args=argv, returncode=0, stdout="ok")
+        raise safe_module.subprocess.CalledProcessError(1, argv, stderr="2 tests failed")
+
+    monkeypatch.setattr(safe_module.subprocess, "run", fake_run)
+
+    action = _make_action("dependency.bump", "anthropic")
+    result = safe_module.SafeExecutor(tmp_path).execute(action)
+
+    assert result.simulated is False
+    assert result.status == "failed"
+    assert "reverted" in result.output
+    assert (tmp_path / "uv.lock").read_text(encoding="utf-8") == "original-lock-content"
+
+
 def test_model_council_denies_when_red_team_review_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -289,6 +341,47 @@ def test_promote_requires_human_approval_before_execution(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match="approved by a human"):
         engine.promote(record.mutation_id)
+
+
+def test_promote_records_failure_and_archives_on_real_execution_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Found by actually running a real dependency-bump pilot: a failed
+    real promotion used to raise and leave the mutation stuck at APPROVED
+    forever, with no audit trail of what happened. This locks in the fix:
+    the mutation must be archived and the failure recorded."""
+    import executor.safe as safe_module
+    from executor import ExecutionResult
+    from tcb import MutationState
+    from vek import EvolutionEngine
+
+    engine = EvolutionEngine(tmp_path)
+    record = engine.plan("I need to process video safely")
+    engine.approve(record.mutation_id, approved_by="test-human")
+
+    def fake_execute(self: object, action: object, **kwargs: object) -> ExecutionResult:
+        return ExecutionResult(
+            action_id="promote-fail",
+            status="failed",
+            simulated=False,
+            output="simulated real-world failure",
+        )
+
+    monkeypatch.setattr(safe_module.SafeExecutor, "execute", fake_execute)
+
+    with pytest.raises(RuntimeError, match="real promotion execution failed"):
+        engine.promote(record.mutation_id)
+
+    archived = engine.mutations.load(record.mutation_id)
+    assert archived.state is MutationState.ARCHIVED
+
+    audit_events = [
+        line
+        for line in (engine.audit.path.read_text(encoding="utf-8")).splitlines()
+        if '"generation.promotion_failed"' in line
+    ]
+    assert len(audit_events) == 1
+    assert "simulated real-world failure" in audit_events[0]
 
 
 def test_deterministic_verifier_approves_ordinary_nix_config() -> None:

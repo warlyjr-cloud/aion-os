@@ -1,0 +1,9 @@
+{
+  "blocked": [
+    "root",
+    "free-shell",
+    "protected-files",
+    "reserved-tests"
+  ],
+  "status": "simulated"
+}

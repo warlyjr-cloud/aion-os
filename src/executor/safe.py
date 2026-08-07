@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,11 +36,21 @@ class SafeExecutor:
             "generation.build",
             "benchmark.run",
             "memory.quarantine",
+            "dependency.bump",
         }
     )
     REAL_EXECUTION_TYPES = frozenset(
-        {"package.propose", "file.patch", "benchmark.run_tests", "service.configure"}
+        {
+            "package.propose",
+            "file.patch",
+            "benchmark.run_tests",
+            "service.configure",
+            "dependency.bump",
+        }
     )
+
+    def __init__(self, project_root: Path | None = None) -> None:
+        self.project_root = project_root or Path.cwd()
 
     def execute(self, action: SemanticAction, *, force_simulated: bool = False) -> ExecutionResult:
         if action.action_type not in self.ALLOWLIST:
@@ -78,6 +89,13 @@ class SafeExecutor:
                     result = subprocess.run(  # noqa: S603 - fixed argv list (no shell, no user input)
                         [uv_path, "run", "pytest"], capture_output=True, text=True, check=True
                     )
+                elif action.action_type == "dependency.bump":
+                    if not _SAFE_TARGET_PATTERN.fullmatch(action.target):
+                        raise ValueError(f"unsafe dependency target rejected: {action.target!r}")
+                    uv_path = shutil.which("uv")
+                    if uv_path is None:
+                        raise FileNotFoundError("uv executable not found on PATH")
+                    result = self._bump_dependency_and_verify(uv_path, action.target)
                 else:
                     result = subprocess.CompletedProcess(
                         args=[], returncode=0, stdout="verified successfully"
@@ -113,4 +131,56 @@ class SafeExecutor:
                 f"validated {'simulation' if simulated else 'execution'} "
                 f"for {action.action_type} on {action.target}"
             ),
+        )
+
+    def _bump_dependency_and_verify(
+        self, uv_path: str, target: str
+    ) -> subprocess.CompletedProcess[str]:
+        """Real dependency-patch action: upgrade one already-locked package
+        in uv.lock and verify the change with the real test suite. Reverts
+        the lock file if the tests fail - a real, working rollback, not
+        just a policy that promises one."""
+        lock_path = self.project_root / "uv.lock"
+        backup = lock_path.read_bytes() if lock_path.is_file() else None
+
+        lock_result = subprocess.run(  # noqa: S603 - target validated by caller, argv list
+            [uv_path, "lock", "--upgrade-package", target],
+            cwd=self.project_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        # The verification run must not inherit this process's own
+        # AION_RUNTIME_MODE/AION_ALLOW_HOST_MUTATION: those flags are set
+        # because *this* dependency.bump action is running for real, but
+        # the test suite being used to verify the bump has its own tests
+        # that assume simulation-only behavior by default. Without this,
+        # a real bump run poisons its own safety-check subprocess into
+        # attempting unrelated real host actions and fails for the wrong
+        # reason - found by actually running this end to end, not guessed.
+        verify_env = dict(os.environ)
+        verify_env["AION_RUNTIME_MODE"] = "simulation"
+        verify_env.pop("AION_ALLOW_HOST_MUTATION", None)
+        try:
+            test_result = subprocess.run(  # noqa: S603 - fixed argv list (no shell, no user input)
+                [uv_path, "run", "pytest"],
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                check=True,
+                env=verify_env,
+            )
+        except subprocess.CalledProcessError as exc:
+            if backup is not None:
+                lock_path.write_bytes(backup)
+            elif lock_path.is_file():
+                lock_path.unlink()
+            raise RuntimeError(
+                f"dependency bump for {target!r} reverted: tests failed after upgrade "
+                f"(exit {exc.returncode}). stdout: {exc.stdout!r} stderr: {exc.stderr!r}"
+            ) from exc
+        return subprocess.CompletedProcess(
+            args=lock_result.args,
+            returncode=0,
+            stdout=f"lock: {lock_result.stdout}\ntests: {test_result.stdout}",
         )

@@ -1,0 +1,9 @@
+{
+  "deterministic_verifier": {
+    "approved": true,
+    "findings": [],
+    "verifier": "deterministic-verifier/v1"
+  },
+  "scope": "deterministic policy checks + deterministic-verifier/v1 pattern scan",
+  "status": "pass"
+}

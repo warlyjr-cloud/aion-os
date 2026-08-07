@@ -1,0 +1,48 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "obj-669c56f63683-lock-upgrade",
+      "capabilities": [
+        "dependency.bump:anthropic"
+      ],
+      "configuration": "uv lock --upgrade-package anthropic",
+      "metrics": {
+        "cost": 0.15,
+        "novelty": 0.2,
+        "security": 0.97,
+        "success": 0.9
+      },
+      "parent_id": null,
+      "provider": "dependency-bump-provider/v1",
+      "simulated": true,
+      "skill": {
+        "mode": "verified",
+        "name": "bump-anthropic",
+        "shell": "disabled"
+      }
+    },
+    {
+      "candidate_id": "obj-669c56f63683-lock-upgrade-conservative",
+      "capabilities": [
+        "dependency.bump:anthropic"
+      ],
+      "configuration": "uv lock --upgrade-package anthropic # verified by real pytest run",
+      "metrics": {
+        "cost": 0.1,
+        "novelty": 0.1,
+        "security": 0.99,
+        "success": 0.85
+      },
+      "parent_id": null,
+      "provider": "dependency-bump-provider/v1",
+      "simulated": true,
+      "skill": {
+        "mode": "verified",
+        "name": "bump-anthropic-conservative",
+        "shell": "disabled"
+      }
+    }
+  ],
+  "method": "pareto-frontier",
+  "selection": "obj-669c56f63683-lock-upgrade-conservative"
+}

@@ -126,3 +126,61 @@ uv run aionctl mutations promote <mutation_id>
 Evidência bruta desta execução específica está preservada em
 `proofs/mut-774079d0ed4a/` (incluindo `audit-trail.jsonl`, cópia do log de
 auditoria real gerado durante esta prova).
+
+## Segundo piloto real: patch management (dependency.bump), no próprio aion-os
+
+Depois da primeira prova acima, implementamos um segundo tipo de ação real —
+`dependency.bump` — e rodamos o caso de uso vertical proposto em
+`docs/VERTICAL_USE_CASE.md` **contra o próprio repositório**, não contra um
+sandbox descartável: atualizar a dependência `anthropic` (0.120.2 → mais
+recente) usando `DependencyBumpProvider` (`src/providers/dependency_bump.py`),
+com `AION_RUNTIME_MODE=real` e `AION_ALLOW_HOST_MUTATION=1`, no Windows local
+(sem WSL/Nix — essa ação só precisa de `uv`).
+
+**Resultado real, não simulado**: o `uv.lock` deste repositório tem
+`anthropic == 0.121.0` porque o AION aplicou essa mudança de verdade, depois
+de dois gates de verificação, aprovação humana explícita, e uma suíte de 72
+testes reais rodando como verificação pós-mudança.
+
+### As duas primeiras tentativas falharam de verdade — e isso é a parte boa
+
+Rodar isso de propósito, ao vivo, contra o próprio código, encontrou **dois
+bugs reais** que nenhuma simulação teria pego:
+
+1. **Vazamento de ambiente**: o subprocess de verificação (`uv run pytest`,
+   chamado de dentro de `_bump_dependency_and_verify`) herdava
+   `AION_RUNTIME_MODE=real`/`AION_ALLOW_HOST_MUTATION=1` do processo pai —
+   fazendo os próprios testes do projeto tentarem executar `nix build` de
+   verdade dentro de si mesmos (e falhar, porque não há WSL/Nix nesse
+   ambiente). Corrigido isolando o ambiente do subprocess de verificação
+   (`src/executor/safe.py`, `verify_env`).
+2. **Falha real não registrada em lugar nenhum**: quando `promote()` falhava
+   de verdade, a mutação ficava presa em `approved` para sempre — sem
+   transição de estado, sem evento de auditoria. Um humano teria que
+   inspecionar logs manualmente pra entender o que aconteceu. Corrigido:
+   falha real agora transiciona a mutação pra `archived` e grava um evento
+   `generation.promotion_failed` no log de auditoria com hash encadeado
+   (`src/vek/engine.py`).
+
+Evidência do antes/depois, nas próprias mutações geradas por essas tentativas:
+
+| Tentativa | Resultado | Estado final da mutação |
+|---|---|---|
+| `mut-f1211fba8b0f` (antes do fix 1) | Falhou por vazamento de ambiente | `approved` — presa, sem registro da falha |
+| `mut-8ec3db613dbd` (depois do fix 1, antes do fix 2) | Falhou (mesma causa, log incompleto) | `approved` — presa, sem registro da falha |
+| `mut-a47120c10d71` (depois de ambos os fixes) | Sucesso real | `monitoring` — `anthropic` 0.121.0 no lock, evidência completa em `proofs/mut-a47120c10d71/` |
+
+Isso é exatamente o valor de rodar de verdade em vez de simular: nenhuma das
+duas falhas apareceria numa demonstração cuidadosamente roteirizada.
+
+### O que isso prova, e o que não prova
+
+**Prova**: um segundo tipo de ação real (não só `package.propose`), o
+caso de uso vertical proposto funcionando ponta a ponta contra o próprio
+projeto, rollback real de arquivo (`uv.lock` restaurado byte a byte quando
+os testes falhavam), e — talvez o mais importante — que dogfooding real
+encontra bugs reais que documentação e simulação escondem.
+
+**Não prova**: que isso funciona em outro gerenciador de pacote (npm, apt),
+em outro sistema operacional além de Windows/Linux, ou sob uso concorrente
+por múltiplos usuários/mutações ao mesmo tempo.
