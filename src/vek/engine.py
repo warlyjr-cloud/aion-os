@@ -14,7 +14,7 @@ from evolution import MutationRecord, MutationStore
 from executor import SafeExecutor
 from genome import SystemGenome
 from intent import IntentContract
-from model_council import ModelCouncil
+from model_council import DeterministicVerifier, ModelCouncil
 from policy import PolicyDecision, PolicyEngine
 from population import CandidateArchive, EvolutionPopulation, LineageGraph, ParetoSelector
 from proofs import ProofEngine
@@ -197,6 +197,18 @@ class EvolutionEngine:
             record.transition(MutationState.ARCHIVED)
             self.mutations.save(record)
             raise PermissionError(council.reason)
+
+        # A second, genuinely independent gate: deterministic, pattern-based,
+        # no LLM involved. It cannot be the "same model reviewing itself"
+        # regardless of which provider proposed or which model backs the
+        # ModelCouncil review above, and it cannot fail open on an API error.
+        deterministic_verdict = DeterministicVerifier.verify(selected.configuration)
+        if not deterministic_verdict.approved:
+            record.transition(MutationState.ARCHIVED)
+            self.mutations.save(record)
+            raise PermissionError(
+                f"candidate denied by deterministic verifier: {deterministic_verdict.findings}"
+            )
         self._advance(record, MutationState.EVALUATED)
 
         reports = self._reports(
@@ -205,6 +217,7 @@ class EvolutionEngine:
             policy_results=policy_results,
             execution_results=execution_results,
             council=council.model_dump(mode="json"),
+            deterministic_verdict=deterministic_verdict.model_dump(mode="json"),
             package=package,
         )
         proof_path = self.proofs.create(
@@ -410,6 +423,7 @@ class EvolutionEngine:
         policy_results: list[dict[str, str]],
         execution_results: list[dict[str, object]],
         council: dict[str, object],
+        deterministic_verdict: dict[str, object],
         package: str,
     ) -> dict[str, dict[str, object]]:
         return {
@@ -423,7 +437,11 @@ class EvolutionEngine:
                 "status": "simulated",
                 "tests": ["configuration", "skill-contract"],
             },
-            "security-report.json": {"status": "pass", "scope": "deterministic policy checks"},
+            "security-report.json": {
+                "status": "pass" if deterministic_verdict["approved"] else "fail",
+                "scope": "deterministic policy checks + deterministic-verifier/v1 pattern scan",
+                "deterministic_verifier": deterministic_verdict,
+            },
             "benchmark-report.json": {"status": "simulated", "score": selected["metrics"]},
             "adversarial-report.json": {
                 "status": "simulated",
