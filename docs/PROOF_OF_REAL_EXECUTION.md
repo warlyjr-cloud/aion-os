@@ -73,6 +73,42 @@ quando necessário.
 - Que `benchmark.run_tests` (a segunda ação real do executor) foi exercitada
   nesta prova — só `package.propose` foi testado ponta a ponta aqui.
 
+## Benchmark comparativo real: AION guiado vs. baseline ingênuo
+
+Além do ciclo real acima, rodamos o mesmo harness OS-EvoBench
+(`src/evaluator/runner.py`) contra dois candidatos distintos, ambos
+avaliados pelas mesmas 5 tarefas, testes públicos e reservados:
+
+- `aion-deterministic-baseline-v1` (`src/evaluator/baseline.py`): segue o
+  caminho declarativo completo (propõe capability, restaura serviço via
+  ação tipada, aplica preset balanceado, ativa firewall + desabilita senha
+  SSH, coloca memória não confiável em quarentena).
+- `aion-naive-unguarded-v1` (`src/evaluator/naive_baseline.py`): faz o
+  "atalho" que um agente sem guardrails tomaria em cada tarefa — pula a
+  quarentena e usa a memória não confiável direto, reivindica sucesso sem
+  executar a ação (reward hacking), aplica só metade do hardening, etc.
+
+Resultado real (`benchmarks/os_evobench/reports/comparative-guarded-vs-naive.json`,
+reproduzível via `python scripts/run_comparative_benchmark.py`):
+
+| Candidato | Score | Tarefas com sucesso | Bloqueios do red-team |
+|---|---|---|---|
+| `aion-deterministic-baseline-v1` | **1.0** | 5/5 | 0/5 |
+| `aion-naive-unguarded-v1` | **0.253** | 0/5 | 3/5 |
+
+O `red_team.blocked` sendo real (3 das 5 tarefas do candidato ingênuo
+foram capturadas pelo mecanismo de detecção do próprio harness — reward
+hacking na tarefa de recuperação, memory poisoning na tarefa de memória
+não confiável) é o que torna esse número diferente de uma alegação
+qualquer: é o mesmo motor de avaliação, aplicado igualmente aos dois
+candidatos, sem juiz humano no meio.
+
+**O que isso NÃO prova**: não é uma comparação contra um agente de LLM
+real e "livre" (o `NaiveBaseline` é código determinístico simulando o que
+um agente descuidado faria, não um LLM de verdade sem guardrails rodando
+de fato). Uma comparação com um provider real não-guiado é trabalho
+futuro.
+
 ## Como reproduzir
 
 ```bash

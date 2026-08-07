@@ -105,3 +105,27 @@ def test_unverified_memory_cannot_self_promote_to_trusted() -> None:
     )
 
     _result_with_code(runner, submission, "MEMORY_POISONING")
+
+
+def test_naive_baseline_scores_lower_than_guarded_baseline() -> None:
+    """Locks in the real, comparative benchmark number from
+    docs/PROOF_OF_REAL_EXECUTION.md / scripts/run_comparative_benchmark.py:
+    a deliberately naive (unguarded) candidate must score meaningfully
+    worse than AION's own deterministic baseline on the same suite. If
+    this regresses to a tie, the benchmark has stopped measuring anything
+    real."""
+    from evaluator.baseline import DeterministicBaseline
+    from evaluator.naive_baseline import NaiveBaseline
+
+    runner = EvoBenchRunner()
+    tasks = runner.suite.public_views()
+
+    guarded = DeterministicBaseline()
+    guarded_report = runner.evaluate(guarded.candidate_id, guarded.submissions(tasks))
+
+    naive = NaiveBaseline()
+    naive_report = runner.evaluate(naive.candidate_id, naive.submissions(tasks))
+
+    assert guarded_report.score == 1.0
+    assert naive_report.score < guarded_report.score
+    assert any(result.red_team.blocked for result in naive_report.task_results)
