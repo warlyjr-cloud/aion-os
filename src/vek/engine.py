@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import unicodedata
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -17,12 +18,15 @@ from model_council import ModelCouncil
 from policy import PolicyDecision, PolicyEngine
 from population import CandidateArchive, EvolutionPopulation, LineageGraph, ParetoSelector
 from proofs import ProofEngine
-from providers import MockProvider, Provider
+from providers import CandidateProposal, MockProvider, Provider
 from tcb import ActionValidator, EvidenceVerifier, MutationState
 
 
 class EvolutionEngine:
-    """Offline RSI-2 workflow. It creates proof-carrying proposals but never mutates the host."""
+    """Offline RSI-2 workflow. `plan()` only ever proposes and simulates; real
+    host execution (subject to AION_RUNTIME_MODE and AION_ALLOW_HOST_MUTATION)
+    can only happen inside `promote()`, after a human has called `approve()`.
+    """
 
     def __init__(self, project_root: Path, provider: Provider | None = None) -> None:
         self.project_root = project_root.resolve()
@@ -32,19 +36,41 @@ class EvolutionEngine:
         self.audit = AuditLog(self.state_root / "audit.jsonl")
         if provider is not None:
             self.provider = provider
+        elif os.getenv("ANTHROPIC_API_KEY"):
+            from providers.llm import AnthropicProvider
+
+            self.provider = AnthropicProvider()
         else:
-            import os
-            if os.getenv("ANTHROPIC_API_KEY"):
-                from providers.llm import AnthropicProvider
-                self.provider = AnthropicProvider()
-            else:
-                self.provider = MockProvider()
-                
+            self.provider = MockProvider()
+
         self.proofs = ProofEngine(self.project_root / "proofs")
         self.generations_root = self.state_root / "generations"
         self.generations_root.mkdir(parents=True, exist_ok=True)
-        import os
-        self.simulated = os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation"
+
+    def _build_action(
+        self,
+        *,
+        action_id: str,
+        objective_id: str,
+        candidate: CandidateProposal,
+        engine_capability: str,
+        fallback_target: str,
+    ) -> SemanticAction:
+        cap = candidate.capabilities[0] if candidate.capabilities else engine_capability
+        action_type = cap.split(":", 1)[0]
+        target = cap.split(":", 1)[1] if ":" in cap else fallback_target
+        return SemanticAction(
+            action_id=action_id,
+            action_type=action_type,
+            target=target,
+            reason="validated capability gap",
+            origin=self.provider.identity,
+            objective_id=objective_id,
+            required_capability=engine_capability,
+            risk_tier=1,
+            expected_result="declarative package proposal generated",
+            rollback_action="generation.restore_parent",
+        )
 
     def plan(self, objective: str) -> MutationRecord:
         normalized = " ".join(objective.split())
@@ -58,10 +84,16 @@ class EvolutionEngine:
             if not unicodedata.combining(character)
         )
         video_goal = "video" in searchable_objective
-        metamorphic_goal = "aion" in searchable_objective or "daemon" in searchable_objective or "engine" in searchable_objective or "grid" in searchable_objective or "desktop" in searchable_objective
+        metamorphic_goal = (
+            "aion" in searchable_objective
+            or "daemon" in searchable_objective
+            or "engine" in searchable_objective
+            or "grid" in searchable_objective
+            or "desktop" in searchable_objective
+        )
         if metamorphic_goal:
             package = "aion-os"
-            capability = "python.patch:aion-os"
+            capability = "benchmark.run_tests:aion-os"
         elif video_goal:
             package = "ffmpeg"
             capability = "package.propose:ffmpeg"
@@ -93,7 +125,7 @@ class EvolutionEngine:
             permissions=[capability],
             approval_required=True,
             reversal="restore the parent generation and quarantine generated memory",
-            assumptions=["Nix build is simulated when Nix is unavailable"],
+            assumptions=["real execution, if any, only happens after human approval in promote()"],
         )
         record = MutationRecord(
             mutation_id=mutation_id,
@@ -130,20 +162,12 @@ class EvolutionEngine:
         policy_results: list[dict[str, str]] = []
         execution_results: list[dict[str, object]] = []
         for index, candidate in enumerate(candidates):
-            cap = candidate.capabilities[0] if candidate.capabilities else capability
-            action_type = cap.split(":", 1)[0]
-            target = cap.split(":", 1)[1] if ":" in cap else package
-            action = SemanticAction(
+            action = self._build_action(
                 action_id=f"action-{mutation_id}-{index}",
-                action_type=action_type,
-                target=target,
-                reason="validated capability gap",
-                origin=self.provider.identity,
                 objective_id=objective_id,
-                required_capability=capability,
-                risk_tier=1,
-                expected_result="declarative package proposal generated",
-                rollback_action="generation.restore_parent",
+                candidate=candidate,
+                engine_capability=capability,
+                fallback_target=package,
             )
             result = policy.evaluate(action, actor=self.provider.identity)
             policy_results.append(result.model_dump(mode="json"))
@@ -151,7 +175,11 @@ class EvolutionEngine:
                 record.transition(MutationState.ARCHIVED)
                 self.mutations.save(record)
                 raise PermissionError(f"candidate denied: {result.reason}")
-            execution_results.append(executor.execute(action).model_dump(mode="json"))
+            # plan() only ever proposes: force-simulate so a candidate can never
+            # touch the host before a human has approved and promoted it.
+            execution_results.append(
+                executor.execute(action, force_simulated=True).model_dump(mode="json")
+            )
         self._advance(record, MutationState.POLICY_CHECKED)
         self._advance(record, MutationState.BUILDING)
         self._advance(record, MutationState.TESTING)
@@ -235,15 +263,52 @@ class EvolutionEngine:
         record = self.mutations.load(mutation_id)
         if not record.proof_path:
             raise ValueError("mutation has no evidence path")
+        if record.state is not MutationState.APPROVED:
+            raise ValueError("mutation must be approved by a human before promotion")
         EvidenceVerifier().verify(self.project_root / record.proof_path)
-        record.transition(MutationState.PROMOTING)
-        generation_id = f"gen-{uuid4().hex[:12]}"
-        current = self.current_generation()
+
         selected = next(
             candidate
             for candidate in record.candidates
             if candidate.candidate_id == record.selected_candidate_id
         )
+        engine_capability = record.intent.permissions[0]
+        promote_action = self._build_action(
+            action_id=f"promote-{mutation_id}",
+            objective_id=record.objective_id,
+            candidate=selected,
+            engine_capability=engine_capability,
+            fallback_target=engine_capability.split(":", 1)[1]
+            if ":" in engine_capability
+            else selected.candidate_id,
+        )
+        promote_grants = CapabilityManager(
+            [
+                CapabilityGrant(
+                    grant_id=f"grant-{uuid4().hex[:12]}",
+                    capability=engine_capability,
+                    grantee=self.provider.identity,
+                    objective_id=record.objective_id,
+                    expires_at=datetime.now(UTC) + timedelta(minutes=5),
+                    remaining_uses=1,
+                )
+            ]
+        )
+        promote_policy = PolicyEngine(ActionValidator(promote_grants))
+        promote_decision = promote_policy.evaluate(promote_action, actor=self.provider.identity)
+        if promote_decision.decision is not PolicyDecision.ALLOW:
+            raise PermissionError(f"promotion denied by policy: {promote_decision.reason}")
+
+        # This is the only place a real (non-simulated) host effect can occur,
+        # and only after policy + human approval have both already passed.
+        execution_result = SafeExecutor().execute(promote_action).model_dump(mode="json")
+        simulated = bool(execution_result["simulated"])
+        if not simulated and execution_result["status"] != "success":
+            raise RuntimeError(f"real promotion execution failed: {execution_result['output']}")
+
+        record.transition(MutationState.PROMOTING)
+        generation_id = f"gen-{uuid4().hex[:12]}"
+        current = self.current_generation()
         configuration_hash = hashlib.sha256(selected.configuration.encode()).hexdigest()
         genome = SystemGenome(
             generation_id=generation_id,
@@ -252,7 +317,7 @@ class EvolutionEngine:
             skills=[selected.skill["name"]],
             configuration_hash=configuration_hash,
             mutation_id=mutation_id,
-            simulated=self.simulated,
+            simulated=simulated,
         )
         genome.export(self.generations_root / f"{generation_id}.json")
         (self.generations_root / "current").write_text(generation_id + "\n", encoding="utf-8")
@@ -265,15 +330,16 @@ class EvolutionEngine:
             {
                 "status": "monitoring",
                 "generation_id": generation_id,
-                "simulated": self.simulated,
-                "host_modified": not self.simulated,
+                "simulated": simulated,
+                "host_modified": not simulated,
+                "execution_result": execution_result,
             },
         )
         self.audit.append(
-            "generation.promoted_simulation" if self.simulated else "generation.promoted",
+            "generation.promoted_simulation" if simulated else "generation.promoted",
             actor="tcb-executor",
             mutation_id=mutation_id,
-            details={"generation_id": generation_id, "simulated": self.simulated},
+            details={"generation_id": generation_id, "simulated": simulated},
         )
         return record
 
@@ -299,15 +365,15 @@ class EvolutionEngine:
                 "status": "rolled_back",
                 "generation_id": record.generation_id,
                 "restored_generation_id": genome.parent_generation_id,
-                "simulated": self.simulated,
-                "host_modified": not self.simulated,
+                "simulated": genome.simulated,
+                "host_modified": not genome.simulated,
             },
         )
         self.audit.append(
-            "generation.rolled_back_simulation" if self.simulated else "generation.rolled_back",
+            "generation.rolled_back_simulation" if genome.simulated else "generation.rolled_back",
             actor="tcb-executor",
             mutation_id=record.mutation_id,
-            details={"restored": genome.parent_generation_id, "simulated": self.simulated},
+            details={"restored": genome.parent_generation_id, "simulated": genome.simulated},
         )
         return record
 
