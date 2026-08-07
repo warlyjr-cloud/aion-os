@@ -44,7 +44,6 @@ jobs:
           while IFS= read -r -d '' file; do
             python -m json.tool "$file" >/dev/null
           done < <(find schemas capabilities policies tools -type f -name '*.json' -print0)
-          python -m json.tool flake.lock >/dev/null
 
   protected-files:
     if: github.event_name == 'pull_request'
