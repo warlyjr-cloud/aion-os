@@ -60,7 +60,7 @@ class MemoryStore:
             )
         if entry.trust is MemoryTrust.UNTRUSTED and entry.action_authority:
             raise ValueError("untrusted memory cannot carry action authority")
-        
+
         with FileLock(self.path):
             entries = {item.memory_id: item for item in self._read_all()}
             if entry.memory_id in entries:

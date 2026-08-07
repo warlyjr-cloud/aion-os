@@ -10,7 +10,9 @@ def main() -> None:
 
     start_parser = subparsers.add_parser("start", help="Start the AION P2P Grid Node")
     start_parser.add_argument("--once", action="store_true", help="run one health cycle and exit")
-    start_parser.add_argument("--interval", type=float, default=5.0, help="heartbeat interval in seconds")
+    start_parser.add_argument(
+        "--interval", type=float, default=5.0, help="heartbeat interval in seconds"
+    )
 
     subparsers.add_parser("init", help="Initialize local node crypto keys")
 

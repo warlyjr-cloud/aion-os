@@ -1,6 +1,7 @@
 import time
 from pathlib import Path
 
+
 class FileLock:
     """A cross-platform file locking mechanism using atomic directory creation."""
 
@@ -18,7 +19,9 @@ class FileLock:
                 break
             except FileExistsError:
                 if time.monotonic() - start_time >= self.timeout:
-                    raise TimeoutError(f"Could not acquire lock for {self.lock_path} within {self.timeout}s")
+                    raise TimeoutError(
+                        f"Could not acquire lock for {self.lock_path} within {self.timeout}s"
+                    ) from None
                 time.sleep(self.retry_delay)
         return self
 

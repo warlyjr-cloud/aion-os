@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 # pyright: reportUnusedFunction=false
-
 import json
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
@@ -33,12 +33,12 @@ def _ensure_runtime_layout() -> None:
     (state_dir / "logs").mkdir(parents=True, exist_ok=True)
 
 
-def _read_audit_log() -> List[Dict[str, Any]]:
+def _read_audit_log() -> list[dict[str, Any]]:
     audit_file = _get_state_dir() / "audit.jsonl"
     if not audit_file.exists():
         return []
 
-    logs: List[Dict[str, Any]] = []
+    logs: list[dict[str, Any]] = []
     with audit_file.open("r", encoding="utf-8") as handle:
         for line in handle:
             if line.strip():
@@ -50,12 +50,12 @@ def _read_audit_log() -> List[Dict[str, Any]]:
     return logs
 
 
-def _read_mutations() -> List[Dict[str, Any]]:
+def _read_mutations() -> list[dict[str, Any]]:
     mutations_dir = _get_state_dir() / "mutations"
     if not mutations_dir.exists():
         return []
 
-    mutations: List[Dict[str, Any]] = []
+    mutations: list[dict[str, Any]] = []
     for mutation_file in mutations_dir.glob("*.json"):
         with mutation_file.open("r", encoding="utf-8") as handle:
             try:
@@ -67,7 +67,7 @@ def _read_mutations() -> List[Dict[str, Any]]:
 
 def create_app() -> FastAPI:
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         _ensure_runtime_layout()
         yield
 
@@ -81,13 +81,13 @@ def create_app() -> FastAPI:
     templates = Jinja2Templates(directory=str(dashboard_dir / "templates"))
 
     @app.get("/healthz")
-    async def healthz() -> Dict[str, Any]:
+    async def healthz() -> dict[str, Any]:
         return {
             "status": "ok",
             "service": "aion-dashboard",
             "mode": os.getenv("AION_RUNTIME_MODE", "simulation"),
             "project": "aion-os",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "project_root": str(_get_project_root()),
         }
 
@@ -104,10 +104,14 @@ def create_app() -> FastAPI:
         return JSONResponse(payload, status_code=status_code)
 
     @app.get("/api/status")
-    async def api_status() -> Dict[str, Any]:
+    async def api_status() -> dict[str, Any]:
         mutations = _read_mutations()
-        pending = [mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"]
-        history = [mutation for mutation in mutations if mutation.get("state") != "awaiting_approval"]
+        pending = [
+            mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"
+        ]
+        history = [
+            mutation for mutation in mutations if mutation.get("state") != "awaiting_approval"
+        ]
         return {
             "project": "aion-os",
             "status": "ready",
@@ -121,7 +125,9 @@ def create_app() -> FastAPI:
     @app.get("/metrics")
     async def metrics() -> PlainTextResponse:
         mutations = _read_mutations()
-        pending = [mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"]
+        pending = [
+            mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"
+        ]
         return PlainTextResponse(
             "\n".join(
                 [
@@ -142,8 +148,12 @@ def create_app() -> FastAPI:
     async def index(request: Request) -> HTMLResponse:
         audit_logs = _read_audit_log()
         mutations = _read_mutations()
-        pending = [mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"]
-        history = [mutation for mutation in mutations if mutation.get("state") != "awaiting_approval"]
+        pending = [
+            mutation for mutation in mutations if mutation.get("state") == "awaiting_approval"
+        ]
+        history = [
+            mutation for mutation in mutations if mutation.get("state") != "awaiting_approval"
+        ]
         return templates.TemplateResponse(
             request=request,
             name="index.html",
@@ -156,7 +166,7 @@ def create_app() -> FastAPI:
 
     class GossipPayload(BaseModel):
         mutation_id: str
-        proof: Dict[str, Any]
+        proof: dict[str, Any]
 
     @app.post("/grid/gossip")
     async def grid_gossip(payload: GossipPayload) -> JSONResponse:
@@ -169,7 +179,7 @@ def create_app() -> FastAPI:
         return JSONResponse(manager.receive_gossip(payload.model_dump()))
 
     @app.get("/grid/status")
-    async def grid_status() -> Dict[str, Any]:
+    async def grid_status() -> dict[str, Any]:
         try:
             from grid.p2p import GridManager
         except Exception as exc:  # pragma: no cover - defensive path
@@ -183,7 +193,7 @@ def create_app() -> FastAPI:
         context: str
 
     @app.post("/grid/compute")
-    async def grid_compute(payload: ComputePayload) -> Dict[str, Any]:
+    async def grid_compute(payload: ComputePayload) -> dict[str, Any]:
         try:
             from intent import IntentContract
             from providers.llm import AnthropicProvider
@@ -222,7 +232,9 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
-    host = os.getenv("AION_DASHBOARD_HOST", "0.0.0.0")
+    # Containerized deployment needs 0.0.0.0 to be reachable from outside the
+    # container; overridable via env var, matches .env.example / docker-compose.
+    host = os.getenv("AION_DASHBOARD_HOST", "0.0.0.0")  # noqa: S104
     port = int(os.getenv("AION_DASHBOARD_PORT", "8000"))
     log_level = os.getenv("AION_LOG_LEVEL", "info")
     uvicorn.run(app, host=host, port=port, log_level=log_level)

@@ -5,7 +5,6 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-
 REDACTED = "[REDACTED]"
 
 
@@ -17,7 +16,7 @@ class SecretConfig:
     oracle_api_key: str | None = None
 
     @classmethod
-    def from_environment(cls) -> "SecretConfig":
+    def from_environment(cls) -> SecretConfig:
         return cls(
             provider_api_key=os.getenv("AION_PROVIDER_API_KEY"),
             fleet_manager_endpoint=os.getenv("AION_FLEET_MANAGER_ENDPOINT"),

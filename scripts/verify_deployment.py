@@ -14,9 +14,14 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def run(cmd: list[str]) -> str:
-    result = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, check=False)
+    result = subprocess.run(  # noqa: S603 - argv list, no shell, hardcoded caller commands
+        cmd, cwd=ROOT, capture_output=True, text=True, check=False
+    )
     if result.returncode != 0:
-        raise SystemExit(f"Command failed ({result.returncode}): {' '.join(cmd)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}")
+        raise SystemExit(
+            f"Command failed ({result.returncode}): {' '.join(cmd)}\n"
+            f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+        )
     return result.stdout.strip()
 
 

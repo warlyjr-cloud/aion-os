@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 
 from src.dashboard.app import app
 
-
 os.environ.setdefault("AION_PROJECT_ROOT", str(Path(__file__).resolve().parents[2]))
 
 

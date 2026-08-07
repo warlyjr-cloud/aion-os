@@ -4,6 +4,7 @@ import argparse
 import concurrent.futures
 import json
 import os
+import random
 import signal
 import sys
 import time
@@ -11,15 +12,15 @@ import traceback
 from pathlib import Path
 from typing import Any, cast
 
+from aiond.genesis_lock import verify_dead_mans_switch
 from audit import AuditLog
-from security.secrets import SecretConfig, ensure_public_safe_payload
-from vek.engine import EvolutionEngine
-from immune_memory.monitor import SystemMonitor
 from evolution.polymorph import polymorph_system
+from immune_memory.monitor import SystemMonitor
 from quantum_fs.fuse_driver import mount_quantum_fs
 from relativity.scheduler import TimeDilationEngine
-from aiond.genesis_lock import verify_dead_mans_switch
-import random
+from security.secrets import SecretConfig, ensure_public_safe_payload
+from vek.engine import EvolutionEngine
+
 
 def _project_root() -> Path:
     return Path(os.environ.get("AION_PROJECT_ROOT", Path.cwd())).resolve()
@@ -29,21 +30,23 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
     config = SecretConfig.from_environment()
     state_root = project_root / ".aion-state"
     stopped = (state_root / "STOP").exists()
-    
+
     # Process Inbox
     inbox_dir = state_root / "inbox"
     archive_dir = state_root / "archive"
     inbox_dir.mkdir(parents=True, exist_ok=True)
     archive_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # 0. The Dead Man's Switch Verification (Security Hardening)
     verify_dead_mans_switch(project_root)
 
     # 1. Start Immune System Monitor
     monitor = SystemMonitor(project_root)
     monitor_runtime = cast(Any, monitor)
-    immune_reaction: dict[str, Any] | None = cast(dict[str, Any] | None, monitor_runtime.check_health_and_react())
-    
+    immune_reaction: dict[str, Any] | None = cast(
+        dict[str, Any] | None, monitor_runtime.check_health_and_react()
+    )
+
     processed_intents: list[dict[str, Any]] = []
     if not stopped:
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
@@ -56,31 +59,48 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
                     futures[future] = intent_file
                 else:
                     intent_file.rename(archive_dir / intent_file.name)
-            
+
             for future in concurrent.futures.as_completed(futures):
                 intent_file = futures[future]
                 try:
                     record = future.result()
-                    processed_intents.append({"file": intent_file.name, "status": "planned", "mutation_id": record.mutation_id})
+                    processed_intents.append(
+                        {
+                            "file": intent_file.name,
+                            "status": "planned",
+                            "mutation_id": record.mutation_id,
+                        }
+                    )
                 except Exception as e:
-                    processed_intents.append({"file": intent_file.name, "status": "error", "error": str(e)})
+                    processed_intents.append(
+                        {"file": intent_file.name, "status": "error", "error": str(e)}
+                    )
                 intent_file.rename(archive_dir / intent_file.name)
-            
+
     # Probabilistic Polymorphism (10% chance per run for MVP demonstration)
     polymorph_target = None
-    if not stopped and random.random() < 0.1:
+    if not stopped and random.random() < 0.1:  # noqa: S311 - demo odds, not security
         polymorph_target = polymorph_system(project_root)
-        
-    sanitized_result = ensure_public_safe_payload({
-        "service": "aiond",
-        "healthy": not stopped,
-        "mode": "simulation-only" if os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation" else "real",
-        "audit_valid": log.verify(),
-        "processed_intents": processed_intents,
-        "immune_reaction": immune_reaction,
-        "polymorphism_target": str(polymorph_target) if polymorph_target else None,
-        "secret_config_present": bool(config.provider_api_key or config.oracle_api_key or config.fleet_manager_endpoint or config.oracle_endpoint),
-    })
+
+    sanitized_result = ensure_public_safe_payload(
+        {
+            "service": "aiond",
+            "healthy": not stopped,
+            "mode": "simulation-only"
+            if os.getenv("AION_RUNTIME_MODE", "simulation") == "simulation"
+            else "real",
+            "audit_valid": log.verify(),
+            "processed_intents": processed_intents,
+            "immune_reaction": immune_reaction,
+            "polymorphism_target": str(polymorph_target) if polymorph_target else None,
+            "secret_config_present": bool(
+                config.provider_api_key
+                or config.oracle_api_key
+                or config.fleet_manager_endpoint
+                or config.oracle_endpoint
+            ),
+        }
+    )
     return cast(dict[str, object], sanitized_result)
 
 

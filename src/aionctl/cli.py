@@ -80,8 +80,7 @@ def plan(objective: str) -> None:
 def doctor() -> None:
     engine = _engine()
     tools = {
-        name: shutil.which(name)
-        for name in ("git", "gh", "uv", "qemu-system-x86_64", "podman")
+        name: shutil.which(name) for name in ("git", "gh", "uv", "qemu-system-x86_64", "podman")
     }
     _emit(
         {
