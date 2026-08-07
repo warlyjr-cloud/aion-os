@@ -54,11 +54,19 @@ class SafeExecutor:
                 if action.action_type == "package.propose":
                     if not _SAFE_TARGET_PATTERN.fullmatch(action.target):
                         raise ValueError(f"unsafe package target rejected: {action.target!r}")
-                    wsl_path = shutil.which("wsl")
-                    if wsl_path is None:
-                        raise FileNotFoundError("wsl executable not found on PATH")
+                    nix_path = shutil.which("nix")
+                    if nix_path is not None:
+                        # Already running where nix is on PATH (native Linux,
+                        # inside WSL, inside a container) - no need to hop
+                        # through the Windows `wsl` launcher.
+                        argv = [nix_path, "build", f"nixpkgs#{action.target}"]
+                    else:
+                        wsl_path = shutil.which("wsl")
+                        if wsl_path is None:
+                            raise FileNotFoundError("neither nix nor wsl found on PATH")
+                        argv = [wsl_path, "-e", "nix", "build", f"nixpkgs#{action.target}"]
                     result = subprocess.run(  # noqa: S603 - target validated above, argv list (no shell)
-                        [wsl_path, "-e", "nix", "build", f"nixpkgs#{action.target}"],
+                        argv,
                         capture_output=True,
                         text=True,
                         check=True,

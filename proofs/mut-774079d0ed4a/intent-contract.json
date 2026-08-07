@@ -1,0 +1,48 @@
+{
+  "acceptable_risk": 1,
+  "approval_required": true,
+  "assumptions": [
+    "real execution, if any, only happens after human approval in promote()"
+  ],
+  "authorized_data": [
+    "project fixtures",
+    "generated proof metadata"
+  ],
+  "constraints": [
+    "no host package installation",
+    "simulation-only execution",
+    "human approval before promotion",
+    "preserve audit and rollback"
+  ],
+  "context": "local-first AION evolution proposal",
+  "expected_result": "validated declarative capability proposal for ffmpeg",
+  "metrics": {
+    "cost": 0.5,
+    "security": 0.98,
+    "success": 0.85
+  },
+  "objective": "I need to process video files",
+  "objective_id": "obj-854976bf31d2",
+  "permissions": [
+    "package.propose:ffmpeg"
+  ],
+  "priority": "normal",
+  "prohibited_data": [
+    "credentials",
+    ".env files",
+    "personal files",
+    "reserved tests"
+  ],
+  "resources": {
+    "cpu_seconds": 30,
+    "memory_mb": 256,
+    "network_requests": 0
+  },
+  "reversal": "restore the parent generation and quarantine generated memory",
+  "stop_criteria": [
+    "policy denial",
+    "test failure",
+    "evidence mismatch",
+    "budget exhaustion"
+  ]
+}

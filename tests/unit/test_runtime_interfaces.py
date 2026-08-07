@@ -209,6 +209,34 @@ def test_safe_executor_requires_both_runtime_mode_and_allow_host_mutation(
     assert SafeExecutor().execute(action).simulated is True
 
 
+def test_safe_executor_prefers_native_nix_over_wsl_hop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import executor.safe as safe_module
+
+    monkeypatch.setenv("AION_RUNTIME_MODE", "real")
+    monkeypatch.setenv("AION_ALLOW_HOST_MUTATION", "1")
+    action = _make_action("package.propose", "ffmpeg")
+
+    def fake_which(name: str) -> str | None:
+        return "/usr/bin/nix" if name == "nix" else None
+
+    captured_argv: list[list[str]] = []
+
+    def fake_run(argv: list[str], **kwargs: object):
+        captured_argv.append(argv)
+        return safe_module.subprocess.CompletedProcess(args=argv, returncode=0, stdout="ok")
+
+    monkeypatch.setattr(safe_module.shutil, "which", fake_which)
+    monkeypatch.setattr(safe_module.subprocess, "run", fake_run)
+
+    result = safe_module.SafeExecutor().execute(action)
+
+    assert result.simulated is False
+    assert result.status == "success"
+    assert captured_argv == [["/usr/bin/nix", "build", "nixpkgs#ffmpeg"]]
+
+
 def test_model_council_denies_when_red_team_review_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
