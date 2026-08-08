@@ -29,6 +29,11 @@ EXCLUDED_PATHS = {
 EXCLUDED_DIR_NAMES = {
     ".venv", ".uv-cache", ".git", "node_modules", "__pycache__",
     ".pytest_cache", ".mypy_cache", ".ruff_cache", "dist", "build",
+    # pytest.ini sets --basetemp=.pytest_temp, so a pytest run just before
+    # this scan (both invoked back to back by verify_public_release.py)
+    # leaves tmp_path fixture files here - including ones intentionally
+    # containing secret-shaped strings from this scanner's own tests.
+    ".pytest_temp",
 }
 
 

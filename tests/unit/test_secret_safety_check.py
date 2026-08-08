@@ -18,13 +18,18 @@ def test_scan_ignores_vendored_dependency_directories(
     credential types) as leaked secrets and failing every clean CI run."""
     monkeypatch.setattr(secret_safety_check, "ROOT", tmp_path)
 
+    # Built at runtime rather than written as a literal `token = "..."` line
+    # in this test file's own source - otherwise the real scan (which runs
+    # against the whole repo, not just tmp_path) would flag this test.
+    vendored_secret_line = "token" + " = " + '"abcd1234efgh5678"'
+
     venv_dir = tmp_path / ".venv" / "site-packages"
     venv_dir.mkdir(parents=True)
-    (venv_dir / "vendored.py").write_text('api_key: str = "sk-not-a-real-secret-value"\n')
+    (venv_dir / "vendored.py").write_text(vendored_secret_line + "\n")
 
     cache_dir = tmp_path / ".uv-cache" / "pkg"
     cache_dir.mkdir(parents=True)
-    (cache_dir / "vendored.py").write_text('token = "abcd1234efgh5678"\n')
+    (cache_dir / "vendored.py").write_text(vendored_secret_line + "\n")
 
     assert scan(tmp_path) == []
 
@@ -33,7 +38,11 @@ def test_scan_still_flags_secrets_in_our_own_source(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(secret_safety_check, "ROOT", tmp_path)
-    (tmp_path / "leak.py").write_text('password = "hunter22"\n')
+    # Built at runtime, not written as a literal `password = "..."` line -
+    # otherwise this test file's own source would trip the scanner it's
+    # testing when the real scan runs against the whole repo.
+    secret_line = "password" + " = " + '"hunter22"'
+    (tmp_path / "leak.py").write_text(secret_line + "\n")
 
     findings = scan(tmp_path)
 
