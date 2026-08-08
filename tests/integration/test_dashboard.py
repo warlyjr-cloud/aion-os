@@ -12,7 +12,14 @@ from src.dashboard.app import app
 os.environ.setdefault("AION_PROJECT_ROOT", str(Path(__file__).resolve().parents[2]))
 
 
-def test_dashboard_health_and_status() -> None:
+def test_dashboard_health_and_status(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Isolated on purpose: /readyz requires .aion-state/mutations to exist,
+    # which is gitignored and therefore absent on a clean checkout (this
+    # test used to rely on AION_PROJECT_ROOT pointing at the real repo
+    # root, which only had that directory by accident on a dev machine
+    # that had already run other AION commands locally - it silently
+    # passed there and failed on every clean CI checkout).
+    monkeypatch.setenv("AION_PROJECT_ROOT", str(tmp_path))
     client = TestClient(app)
 
     health = client.get("/healthz")

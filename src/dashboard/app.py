@@ -129,6 +129,10 @@ def create_app() -> FastAPI:
 
     @app.get("/readyz")
     async def readyz() -> JSONResponse:
+        # Don't rely solely on the lifespan startup event having fired -
+        # some test clients/deployment setups never trigger it. This is a
+        # cheap, idempotent mkdir either way.
+        _ensure_runtime_layout()
         state_dir = _get_state_dir()
         ready = state_dir.exists() and (state_dir / "mutations").exists()
         payload = {
