@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 REDACTED = "[REDACTED]"
 
@@ -54,7 +54,9 @@ def ensure_public_safe_payload(payload: Any) -> Any:
     if isinstance(payload, str):
         return redact_sensitive_text(payload)
     if isinstance(payload, dict):
-        return {key: ensure_public_safe_payload(value) for key, value in payload.items()}
+        typed_payload = cast("dict[Any, Any]", payload)
+        return {key: ensure_public_safe_payload(value) for key, value in typed_payload.items()}
     if isinstance(payload, list):
-        return [ensure_public_safe_payload(item) for item in payload]
+        typed_list = cast("list[Any]", payload)
+        return [ensure_public_safe_payload(item) for item in typed_list]
     return payload
