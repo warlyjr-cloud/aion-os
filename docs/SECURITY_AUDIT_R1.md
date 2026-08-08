@@ -1,5 +1,18 @@
 # Security Audit Report: Industrial Secrets & Architectural Remediation (R1)
 
+> **Nota de retratação (2026-08-08):** mantido como registro histórico,
+> não como estado atual. `kernel/`, `src/grid/p2p.py` e
+> `AION_WHITEPAPER.md` (todos citados abaixo como auditados e
+> "compliant") foram removidos em 2026-08-08 — o kernel nunca compilou,
+> seu `SNARKVerifier` sempre retornava `true`, e sua "criptografia
+> pós-quântica lattice-based" era uma matriz de zeros. O veredito
+> "Fully compliant"/"100% SECURE" deste relatório descreve código
+> decorativo como se fosse real; não repita essa caracterização. A
+> conclusão específica sobre ausência de vazamento de "Oracle/Fleet
+> Manager" (a pergunta que este relatório de fato foi pedido para
+> responder) segue verificada e válida — ver `docs/PROJECT_STATUS.md`
+> para a resposta atual e re-verificada.
+
 **Audit Target:** AION OS Open-Source Repository (`src/`, `kernel/`, `docs/`, `AION_WHITEPAPER.md`)  
 **Audit Reference:** Requirement R1 — Trade Secret & Central Routing Protection  
 **Auditor:** worker_m1_gen3 (Milestone 1 Security Audit Team)  

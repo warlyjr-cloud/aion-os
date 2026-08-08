@@ -12,7 +12,6 @@ import traceback
 from pathlib import Path
 from typing import Any, cast
 
-from aiond.genesis_lock import verify_dead_mans_switch
 from audit import AuditLog
 from evolution.polymorph import polymorph_system
 from generative_fs.fuse_driver import mount_generative_fs
@@ -36,9 +35,6 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
     archive_dir = state_root / "archive"
     inbox_dir.mkdir(parents=True, exist_ok=True)
     archive_dir.mkdir(parents=True, exist_ok=True)
-
-    # 0. The Dead Man's Switch Verification (Security Hardening)
-    verify_dead_mans_switch(project_root)
 
     # 1. Start Immune System Monitor
     monitor = SystemMonitor(project_root)

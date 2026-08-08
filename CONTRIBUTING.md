@@ -1,16 +1,29 @@
 # Contributing to AION OS
 
-We welcome contributions to the open-source components of AION OS (The Rust Microkernel and the Python AI Daemon).
-
-## How to Contribute
+## How to contribute
 1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/quantum-fs-upgrade`).
-3. Commit your changes ensuring mathematical correctness and zero-knowledge compliance.
-4. Push to the branch and open a Pull Request.
+2. Create a feature branch.
+3. Make the change, add or update tests, and run the validation suite:
+   ```bash
+   uv sync --extra dev
+   uv run pytest
+   uv run ruff check .
+   uv run pyright
+   ```
+4. Push to the branch and open a Pull Request. The PR template asks for
+   evidence (what you actually ran and its output), not just a claim.
 
-## Code Standards
-- **Rust (Kernel)**: All code must compile under `#![no_std]`. Usage of `unsafe` blocks must be rigorously documented with mathematical proofs of memory safety.
-- **Python (Daemon)**: Code must be typed (`mypy` compliant) and support AST metamorphism natively.
+## Code standards
+- Python, typed, `pyright`-clean, `ruff`-clean.
+- No new dependency without calling it out in the PR description.
+- Real capability changes need a matching test. See
+  `docs/PROJECT_STATUS.md` before claiming something works — "the code
+  was written" and "it runs and was verified" are different bars.
 
-## Enterprise Components
-Please note that the Fleet Manager, Oracle Router, and Enterprise ZKP Prover are closed-source components owned by AION Labs and are not subject to public contributions.
+## Safety invariants
+See `AGENTS.md` and `docs/SAFETY_CONSTITUTION.md`. In short: intelligence
+proposes, only the deterministic TCB authorizes; no model-produced
+free-form shell execution on the host; every action is typed,
+capability-scoped, time-bounded, auditable, and reversible. Changes to
+`src/tcb/`, `policies/`, audit, rollback, or security workflows need
+human review.

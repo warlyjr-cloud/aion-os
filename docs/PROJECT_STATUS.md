@@ -38,7 +38,6 @@ Categorias:
 | `AnthropicProvider` | Código real, nunca exercitado ponta a ponta nesta sessão (só `MockProvider` foi usado nas provas) | Rodar um ciclo real com API key de verdade e revisar a proposta gerada |
 | `src/generative_fs/fuse_driver.py` (antes `src/quantum_fs/`) | FUSE real (via lib `fuse`), mas gera conteúdo de arquivo chamando um LLM sob demanda — nunca montado/testado neste ambiente (Windows não tem FUSE) | Testar em Linux com FUSE instalado |
 | `src/throttle/cpu_throttle.py` (antes `src/relativity/scheduler.py`) | `SIGSTOP`/`SIGCONT` reais em processos pesados — mecanismo real de SO, mas testado só em `start()`/`stop()`, nunca de fato pausando um processo | Teste de integração pausando/retomando um processo de verdade |
-| `src/aiond/genesis_lock.py` (Dead Man's Switch) | O comentário no próprio código diz: *"For the MVP/Demo, we simulate a failure if the file doesn't exist... we will bypass it for the local test"* — ou seja, o próprio autor documentou que o bypass é intencional para demo | Decidir se esse "kill switch" deve ser real antes de qualquer claim de segurança sobre ele |
 
 ## Stub/visão (estrutura existe, lógica real não)
 
@@ -62,6 +61,11 @@ kernel que esta tabela já documentava como "nunca compilado/testado".
 | `src/grid/p2p.py` ("Multiverse Battle" / gossip) e os endpoints `/grid/gossip`, `/grid/status` do dashboard | Consenso decidido por `random.choice`, não um protocolo P2P real. |
 | `.github/workflows/release.yml` ("Build and Release AION Microkernel") | Workflow órfão depois da remoção do `kernel/`. |
 | `AION_WHITEPAPER.md`, `INVESTOR_PITCH.md`, `PROJECT.md` | Documentos de marketing descrevendo a arquitetura acima (DePIN, PQC, ZKP, "relativistic scheduling", "quantum entanglement sync") como validada e funcional. `ORIGINAL_REQUEST.md` (mantido como registro histórico) mostra que a instrução original por trás desses arquivos era literalmente inflar valuation. |
+| `.agents/` (77 arquivos, ~376K) | Anotações internas de um swarm de agentes anterior (BRIEFING/DISPATCH/handoff/progress de "workers" fictícios) — o rascunho de como a decoração acima foi fabricada, sem valor de produto. |
+| `src/aiond/genesis_lock.py` ("Dead Man's Switch") | Decoração pura, não só sub-testada: `GENESIS_PUBLIC_KEY` é uma string hardcoded (o comentário admite "in a real scenario, this would be an Ed25519 or RSA key"), a "verificação de assinatura" é um `in` de string, e o valor de retorno era descartado por `daemon.py` — ou seja, mesmo quando "falhava", nada era de fato travado. |
+| `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`, About do GitHub | Reescritos: descreviam "a maior rede de infraestrutura física descentralizada do mundo", SGX, Ring 0, ZKP como reais; homepage apontava pra um domínio (`aion-os.com`) nunca usado no projeto. |
+| `LICENSE` | "Licensor: AION Labs" (entidade fictícia) e cláusula proibindo competir com uma "rede DePIN da AION Labs" inexistente. Corrigido pro nome real do mantenedor, cláusula DePIN removida. |
+| `docs/audit_report.md`, `docs/SECURITY_AUDIT_R1.md` | Não removidos (são registro histórico de auditoria), mas receberam nota de retratação: seus vereditos "100% SECURE"/"Fully compliant" descreviam o `kernel/` falso como real. A conclusão específica sobre ausência de vazamento de "Oracle/Fleet Manager" segue válida. |
 
 O que **não** foi removido, por ser mecanismo real (só sub-testado, não
 fabricado): `src/generative_fs/fuse_driver.py` (FUSE real),
