@@ -235,30 +235,6 @@ def create_app() -> FastAPI:
             },
         )
 
-    class GossipPayload(BaseModel):
-        mutation_id: str
-        proof: dict[str, Any]
-
-    @app.post("/grid/gossip")
-    async def grid_gossip(payload: GossipPayload) -> JSONResponse:
-        try:
-            from grid.p2p import GridManager
-        except Exception as exc:  # pragma: no cover - defensive path
-            return JSONResponse({"status": "unavailable", "error": str(exc)}, status_code=503)
-
-        manager = GridManager(_get_project_root())
-        return JSONResponse(manager.receive_gossip(payload.model_dump()))
-
-    @app.get("/grid/status")
-    async def grid_status() -> dict[str, Any]:
-        try:
-            from grid.p2p import GridManager
-        except Exception as exc:  # pragma: no cover - defensive path
-            return {"peers": [], "status": "unavailable", "error": str(exc)}
-
-        manager = GridManager(_get_project_root())
-        return {"peers": manager.get_peers(), "status": "ok"}
-
     class ComputePayload(BaseModel):
         objective: str
         context: str

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "aion-os"
 version = "0.1.0"
-description = "The largest decentralized data center in the world, created by AI and a single person. Bare-metal Rust Microkernel & DePIN."
+description = "Governed, auditable autonomous mutation of system configuration: a model proposes, a deterministic gate authorizes."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "BUSL-1.1" }

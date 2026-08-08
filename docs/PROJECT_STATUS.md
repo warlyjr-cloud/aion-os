@@ -35,7 +35,6 @@ Categorias:
 | `SafeExecutor` para `service.configure`/`file.patch` | Sempre retorna `"verified successfully"` sem ação real | Implementar a ação real por tipo, como já foi feito para `package.propose` |
 | `EvoBenchRunner` (as 5 tarefas completas) | Roda de verdade, mas contra um "gêmeo digital" (`DigitalTwin`), não infraestrutura real | Rodar candidatos contra ambiente real, não só o twin |
 | `AnthropicProvider` | Código real, nunca exercitado ponta a ponta nesta sessão (só `MockProvider` foi usado nas provas) | Rodar um ciclo real com API key de verdade e revisar a proposta gerada |
-| `src/grid/p2p.py` (Multiverse Battle / gossip) | 113 linhas, usa `random` pra decidir "qual universo vence" — mecanismo de consenso simbólico, não um protocolo P2P real testado em rede | Definir o que "consenso real" significa pro produto antes de investir mais aqui |
 | `src/quantum_fs/fuse_driver.py` | FUSE real (via lib `fuse`), mas gera conteúdo de arquivo chamando um LLM sob demanda — nunca montado/testado neste ambiente (Windows não tem FUSE) | Testar em Linux com FUSE instalado |
 | `src/relativity/scheduler.py` | `SIGSTOP`/`SIGCONT` reais em processos pesados — mecanismo real de SO, mas testado só em `start()`/`stop()`, nunca de fato pausando um processo | Teste de integração pausando/retomando um processo de verdade |
 | `src/aiond/genesis_lock.py` (Dead Man's Switch) | O comentário no próprio código diz: *"For the MVP/Demo, we simulate a failure if the file doesn't exist... we will bypass it for the local test"* — ou seja, o próprio autor documentou que o bypass é intencional para demo | Decidir se esse "kill switch" deve ser real antes de qualquer claim de segurança sobre ele |
@@ -44,11 +43,30 @@ Categorias:
 
 | Componente | Realidade encontrada nesta sessão |
 |---|---|
-| `kernel/src/pqc.rs` (Post-Quantum Cryptography) | `LatticeCryptoEngine` tem `public_matrix: [[0; 4]; 4]` (matriz de zeros) e `is_quantum_resistant: true` hardcoded. Não há Kyber/Dilithium real — o comentário no código diz "Stub para chaves". |
-| `kernel/src/zkp.rs` (Zero-Knowledge Proof verifier) | `SNARKVerifier::verify_proof()` **sempre retorna `true`**, com comentário `// Stub: A verdadeira implementação calcularia a verificação polinomial`. Isso verifica nada. |
-| `kernel/` como um todo | 133 linhas Rust ao todo (`main.rs`, `vga.rs`, `depin.rs`, `pqc.rs`, `zkp.rs`). Nunca compilado/testado nesta sessão — não há evidência de que builda, muito menos boota. |
-| `clients/android_edge_node/` | ~1.500 linhas Kotlin (mais substancial que o kernel), incluindo um `PoStDaemonService` e `MainActivity`. Não verificado nesta sessão se compila ou roda em um dispositivo/emulador real. |
 | `src/evolution/polymorph.py` (auto-modificação de código) | Real e testado (reescreve `src/executor/*.py` em disco via AST), continua sendo uma feature de risco elevado por design — reescrever o próprio executor de segurança automaticamente merece revisão humana antes de qualquer claim de "seguro". **Incidente real, não hipotético**: até 2026-08-08 essa reescrita disparava com 10% de chance a cada `run_once()`, incondicionalmente — e `scripts/verify_readme.py` chama `run_once()` contra o checkout real da CI. Isso corrompeu `src/executor/safe.py` no meio do pipeline de CI (nunca chegou a ser commitado — é mutação em disco no runner efêmero — mas quebrou a importação do pacote). Corrigido exigindo opt-in explícito (`AION_ENABLE_POLYMORPHISM=1`, padrão desligado) antes do sorteio acontecer, com teste de regressão travando esse comportamento. |
+
+## Removido em 2026-08-08: componentes que eram apenas maquiagem
+
+Os itens abaixo saíram do repositório inteiramente, não só desta tabela.
+Motivo: eram alegações de capacidade que nunca existiram de fato, e em
+um caso (`AION_WHITEPAPER.md`) contradiziam diretamente este documento
+— o whitepaper afirmava "Software Architecture & Physics Validated...
+fully engineered, compiled, and mathematically validated" para o mesmo
+kernel que esta tabela já documentava como "nunca compilado/testado".
+
+| Removido | Por quê |
+|---|---|
+| `kernel/` (Rust, `main.rs`/`vga.rs`/`depin.rs`/`pqc.rs`/`zkp.rs`) | Nunca compilado nesta sessão; `zkp.rs` sempre retornava `true` na verificação; `pqc.rs` tinha matriz de chave zerada apresentada como "quantum resistant". |
+| `clients/android_edge_node/` | ~1.500 linhas Kotlin nunca verificadas compilando ou rodando em dispositivo/emulador real. |
+| `src/grid/p2p.py` ("Multiverse Battle" / gossip) e os endpoints `/grid/gossip`, `/grid/status` do dashboard | Consenso decidido por `random.choice`, não um protocolo P2P real. |
+| `.github/workflows/release.yml` ("Build and Release AION Microkernel") | Workflow órfão depois da remoção do `kernel/`. |
+| `AION_WHITEPAPER.md`, `INVESTOR_PITCH.md`, `PROJECT.md` | Documentos de marketing descrevendo a arquitetura acima (DePIN, PQC, ZKP, "relativistic scheduling", "quantum entanglement sync") como validada e funcional. `ORIGINAL_REQUEST.md` (mantido como registro histórico) mostra que a instrução original por trás desses arquivos era literalmente inflar valuation. |
+
+O que **não** foi removido, por ser mecanismo real (só sub-testado ou
+com nomenclatura teatral, não fabricado): `src/quantum_fs/fuse_driver.py`
+(FUSE real), `src/relativity/scheduler.py` (`SIGSTOP`/`SIGCONT` reais),
+`src/evolution/schrodinger.py` (paralelismo real via `ThreadPoolExecutor`,
+só com nomes de física quântica na variável/log).
 
 ## Como manter isso atualizado
 

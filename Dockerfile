@@ -17,7 +17,6 @@ COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 COPY tests ./tests
 COPY scripts ./scripts
-COPY kernel ./kernel
 COPY pytest.ini ./pytest.ini
 COPY .env.example ./.env.example
 
