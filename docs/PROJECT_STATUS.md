@@ -35,8 +35,8 @@ Categorias:
 | `SafeExecutor` para `service.configure`/`file.patch` | Sempre retorna `"verified successfully"` sem ação real | Implementar a ação real por tipo, como já foi feito para `package.propose` |
 | `EvoBenchRunner` (as 5 tarefas completas) | Roda de verdade, mas contra um "gêmeo digital" (`DigitalTwin`), não infraestrutura real | Rodar candidatos contra ambiente real, não só o twin |
 | `AnthropicProvider` | Código real, nunca exercitado ponta a ponta nesta sessão (só `MockProvider` foi usado nas provas) | Rodar um ciclo real com API key de verdade e revisar a proposta gerada |
-| `src/quantum_fs/fuse_driver.py` | FUSE real (via lib `fuse`), mas gera conteúdo de arquivo chamando um LLM sob demanda — nunca montado/testado neste ambiente (Windows não tem FUSE) | Testar em Linux com FUSE instalado |
-| `src/relativity/scheduler.py` | `SIGSTOP`/`SIGCONT` reais em processos pesados — mecanismo real de SO, mas testado só em `start()`/`stop()`, nunca de fato pausando um processo | Teste de integração pausando/retomando um processo de verdade |
+| `src/generative_fs/fuse_driver.py` (antes `src/quantum_fs/`) | FUSE real (via lib `fuse`), mas gera conteúdo de arquivo chamando um LLM sob demanda — nunca montado/testado neste ambiente (Windows não tem FUSE) | Testar em Linux com FUSE instalado |
+| `src/throttle/cpu_throttle.py` (antes `src/relativity/scheduler.py`) | `SIGSTOP`/`SIGCONT` reais em processos pesados — mecanismo real de SO, mas testado só em `start()`/`stop()`, nunca de fato pausando um processo | Teste de integração pausando/retomando um processo de verdade |
 | `src/aiond/genesis_lock.py` (Dead Man's Switch) | O comentário no próprio código diz: *"For the MVP/Demo, we simulate a failure if the file doesn't exist... we will bypass it for the local test"* — ou seja, o próprio autor documentou que o bypass é intencional para demo | Decidir se esse "kill switch" deve ser real antes de qualquer claim de segurança sobre ele |
 
 ## Stub/visão (estrutura existe, lógica real não)
@@ -62,11 +62,15 @@ kernel que esta tabela já documentava como "nunca compilado/testado".
 | `.github/workflows/release.yml` ("Build and Release AION Microkernel") | Workflow órfão depois da remoção do `kernel/`. |
 | `AION_WHITEPAPER.md`, `INVESTOR_PITCH.md`, `PROJECT.md` | Documentos de marketing descrevendo a arquitetura acima (DePIN, PQC, ZKP, "relativistic scheduling", "quantum entanglement sync") como validada e funcional. `ORIGINAL_REQUEST.md` (mantido como registro histórico) mostra que a instrução original por trás desses arquivos era literalmente inflar valuation. |
 
-O que **não** foi removido, por ser mecanismo real (só sub-testado ou
-com nomenclatura teatral, não fabricado): `src/quantum_fs/fuse_driver.py`
-(FUSE real), `src/relativity/scheduler.py` (`SIGSTOP`/`SIGCONT` reais),
-`src/evolution/schrodinger.py` (paralelismo real via `ThreadPoolExecutor`,
-só com nomes de física quântica na variável/log).
+O que **não** foi removido, por ser mecanismo real (só sub-testado, não
+fabricado): `src/generative_fs/fuse_driver.py` (FUSE real),
+`src/throttle/cpu_throttle.py` (`SIGSTOP`/`SIGCONT` reais),
+`src/evolution/parallel_race.py` (paralelismo real via
+`ThreadPoolExecutor`). Esses três **foram renomeados** em 2026-08-08
+(de `quantum_fs`, `relativity`/`TimeDilationEngine` e
+`schrodinger`/`SchrodingerExecutor`) — o mecanismo é idêntico, só a
+nomenclatura de física deixou de existir, porque ela também é o tipo de
+coisa que convida a alegação errada mais tarde.
 
 ## Como manter isso atualizado
 

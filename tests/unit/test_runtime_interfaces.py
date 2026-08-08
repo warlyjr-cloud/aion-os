@@ -40,17 +40,17 @@ def test_apply_polymorphism_mutates_python_file(tmp_path: Path) -> None:
     assert "hello" in content or "_aion_entropy_salt" in content
 
 
-def test_schrodinger_executor_returns_successful_reality() -> None:
-    from evolution.schrodinger import SchrodingerExecutor
+def test_parallel_race_executor_returns_successful_result() -> None:
+    from evolution.parallel_race import ParallelRaceExecutor
 
-    executor = SchrodingerExecutor(dimensions=2)
+    executor = ParallelRaceExecutor(dimensions=2)
 
     def reducer(value: int) -> int:
         if value == 0:
             raise RuntimeError("boom")
         return value
 
-    assert executor.execute_in_superposition(reducer, [(0,), (3,)]) == 3
+    assert executor.race(reducer, [(0,), (3,)]) == 3
 
 
 def test_system_monitor_rolls_back_when_symptoms_are_present(
@@ -120,29 +120,29 @@ def test_anthropic_provider_requires_api_key(monkeypatch: pytest.MonkeyPatch) ->
         AnthropicProvider()
 
 
-def test_mount_quantum_fs_skips_when_fuse_is_unavailable(
+def test_mount_generative_fs_skips_when_fuse_is_unavailable(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from quantum_fs import fuse_driver
+    from generative_fs import fuse_driver
 
     monkeypatch.setattr(fuse_driver, "FUSE", None)
-    mountpoint = tmp_path / "quantum"
+    mountpoint = tmp_path / "generative"
 
-    fuse_driver.mount_quantum_fs(str(mountpoint))
+    fuse_driver.mount_generative_fs(str(mountpoint))
 
     assert mountpoint.exists()
 
 
-def test_time_dilation_engine_starts_and_stops() -> None:
-    from relativity.scheduler import TimeDilationEngine
+def test_cpu_load_throttler_starts_and_stops() -> None:
+    from throttle.cpu_throttle import CpuLoadThrottler
 
-    engine = TimeDilationEngine(threshold_percent=90.0, tick_interval=0.01)
+    throttler = CpuLoadThrottler(threshold_percent=90.0, tick_interval=0.01)
 
-    engine.start()
-    assert engine.running is True
+    throttler.start()
+    assert throttler.running is True
 
-    engine.stop()
-    assert engine.running is False
+    throttler.stop()
+    assert throttler.running is False
 
 
 def _make_action(action_type: str, target: str):

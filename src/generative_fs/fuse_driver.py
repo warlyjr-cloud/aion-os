@@ -15,7 +15,7 @@ from intent import IntentContract
 from providers.llm import AnthropicProvider
 
 
-class QuantumFS(Operations):  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass]
+class GenerativeFS(Operations):  # pyright: ignore[reportGeneralTypeIssues, reportUntypedBaseClass]
     """
     A FUSE filesystem where files don't exist until read.
     Reading a file dynamically prompts the LLM to generate its content.
@@ -38,7 +38,7 @@ class QuantumFS(Operations):  # pyright: ignore[reportGeneralTypeIssues, reportU
             }
 
         # Virtual file
-        size = len(self.cache.get(path, b"WAITING_FOR_QUANTUM_OBSERVATION..."))
+        size = len(self.cache.get(path, b"WAITING_FOR_FIRST_READ..."))
         return {
             "st_mode": (stat.S_IFREG | 0o444),
             "st_nlink": 1,
@@ -50,17 +50,17 @@ class QuantumFS(Operations):  # pyright: ignore[reportGeneralTypeIssues, reportU
 
     def read(self, path: str, size: int, offset: int, fh: int) -> bytes:
         if path not in self.cache:
-            logging.warning(f"QuantumFS: Observer detected. Collapsing wave function for {path}")
+            logging.warning(f"GenerativeFS: generating content for {path} on first read")
             if self.provider is None:
                 self.provider = AnthropicProvider()
 
             contract = IntentContract(
-                objective_id="quantum-1",
+                objective_id="generative-fs-1",
                 objective=(
                     f"Generate the exact configuration file content for {path}. "
                     "Output ONLY the raw file content."
                 ),
-                context="AION OS Quantum Filesystem JIT Generation",
+                context="AION OS generative filesystem, on-demand file generation",
                 expected_result="Raw text content",
                 constraints=[
                     "No markdown formatting",
@@ -88,21 +88,21 @@ class QuantumFS(Operations):  # pyright: ignore[reportGeneralTypeIssues, reportU
                     else b"Generation failed."
                 )
             except Exception as e:
-                content = f"Quantum Decoherence Error: {e}".encode()
+                content = f"Generation error: {e}".encode()
 
             self.cache[path] = content
 
         return self.cache[path][offset : offset + size]
 
 
-def mount_quantum_fs(mountpoint: str):
+def mount_generative_fs(mountpoint: str):
     if not os.path.exists(mountpoint):
         os.makedirs(mountpoint, exist_ok=True)
     try:
         if FUSE is None:
-            logging.warning(f"FUSE not available, skipping Quantum FS mount at {mountpoint}")
+            logging.warning(f"FUSE not available, skipping generative FS mount at {mountpoint}")
             return
-        FUSE(QuantumFS(), mountpoint, nothreads=True, foreground=False)
-        logging.info(f"Quantum FS mounted at {mountpoint}")
+        FUSE(GenerativeFS(), mountpoint, nothreads=True, foreground=False)
+        logging.info(f"Generative FS mounted at {mountpoint}")
     except Exception as e:
-        logging.error(f"Failed to mount Quantum FS: {e}")
+        logging.error(f"Failed to mount generative FS: {e}")

@@ -15,10 +15,10 @@ from typing import Any, cast
 from aiond.genesis_lock import verify_dead_mans_switch
 from audit import AuditLog
 from evolution.polymorph import polymorph_system
+from generative_fs.fuse_driver import mount_generative_fs
 from immune_memory.monitor import SystemMonitor
-from quantum_fs.fuse_driver import mount_quantum_fs
-from relativity.scheduler import TimeDilationEngine
 from security.secrets import SecretConfig, ensure_public_safe_payload
+from throttle.cpu_throttle import CpuLoadThrottler
 from vek.engine import EvolutionEngine
 
 
@@ -126,11 +126,11 @@ def main(argv: list[str] | None = None) -> None:
         print(json.dumps(run_once(root, AuditLog(state_root / "audit.jsonl")), sort_keys=True))
         return
 
-    quantum_mount = root / ".aion-state" / "quantum"
-    mount_quantum_fs(str(quantum_mount))
+    generative_mount = root / ".aion-state" / "generative-fs"
+    mount_generative_fs(str(generative_mount))
 
-    dilation_engine = TimeDilationEngine(threshold_percent=60.0)
-    dilation_engine.start()
+    throttler = CpuLoadThrottler(threshold_percent=60.0)
+    throttler.start()
 
     state_root = root / ".aion-state"
     log = AuditLog(state_root / "audit.jsonl")
@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> None:
     def stop_handler(_signum: int, _frame: object) -> None:
         nonlocal running
         running = False
-        dilation_engine.stop()
+        throttler.stop()
 
     signal.signal(signal.SIGINT, stop_handler)
     signal.signal(signal.SIGTERM, stop_handler)
