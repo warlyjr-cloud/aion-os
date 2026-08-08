@@ -22,11 +22,22 @@ EXCLUDED_PATHS = {
     ROOT / "src" / "security" / "secrets.py",
 }
 
+# Vendored/installed dependencies and build artifacts are not our source -
+# scanning them found "secrets" like `token: "..."` in pygments' color
+# schemes and `api_key: str = "..."` type annotations in anthropic's own
+# credential types, none of which are real. Only our own tree matters here.
+EXCLUDED_DIR_NAMES = {
+    ".venv", ".uv-cache", ".git", "node_modules", "__pycache__",
+    ".pytest_cache", ".mypy_cache", ".ruff_cache", "dist", "build",
+}
+
 
 def scan(path: Path) -> list[str]:
     if path in EXCLUDED_PATHS:
         return []
     if path.is_dir():
+        if path.name in EXCLUDED_DIR_NAMES:
+            return []
         findings: list[str] = []
         for child in sorted(path.iterdir()):
             findings.extend(scan(child))
