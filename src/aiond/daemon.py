@@ -77,9 +77,20 @@ def run_once(project_root: Path, log: AuditLog) -> dict[str, object]:
                     )
                 intent_file.rename(archive_dir / intent_file.name)
 
-    # Probabilistic Polymorphism (10% chance per run for MVP demonstration)
+    # Probabilistic Polymorphism (10% chance per run for MVP demonstration).
+    # Explicit opt-in only: this rewrites a random file in src/executor/ on
+    # disk via AST mutation. It must never run against a real checkout by
+    # accident - it did, in CI, via this same run_once() being invoked by
+    # scripts/verify_readme.py against the real repo root, and corrupted
+    # src/executor/safe.py mid-pipeline. Found by the pipeline actually
+    # running end to end for the first time, not by review.
     polymorph_target = None
-    if not stopped and random.random() < 0.1:  # noqa: S311 - demo odds, not security
+    polymorphism_enabled = os.getenv("AION_ENABLE_POLYMORPHISM", "0") == "1"
+    if (
+        not stopped
+        and polymorphism_enabled
+        and random.random() < 0.1  # noqa: S311 - demo odds, not security
+    ):
         polymorph_target = polymorph_system(project_root)
 
     sanitized_result = ensure_public_safe_payload(

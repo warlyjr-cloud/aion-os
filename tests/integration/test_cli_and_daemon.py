@@ -56,3 +56,30 @@ def test_cli_full_simulated_decision_flow(tmp_path: Path, monkeypatch: pytest.Mo
 
     log = AuditLog(tmp_path / ".aion-state" / "audit.jsonl")
     assert run_once(tmp_path, log)["healthy"] is False
+
+
+def test_polymorphism_never_runs_without_explicit_opt_in(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Found live in CI: run_once() is invoked with the real repo root by
+    scripts/verify_readme.py, and a 10% random chance used to call
+    polymorph_system() unconditionally - which picks a random file under
+    src/executor/ and rewrites it via AST mutation. It corrupted
+    src/executor/safe.py mid-pipeline. This locks in that it now requires
+    an explicit AION_ENABLE_POLYMORPHISM=1 opt-in, defaulting to off."""
+    import aiond.daemon as daemon_module
+    from audit import AuditLog
+
+    monkeypatch.setattr(daemon_module.random, "random", lambda: 0.0)
+    called: list[Path] = []
+    monkeypatch.setattr(
+        daemon_module, "polymorph_system", lambda project_root: called.append(project_root)
+    )
+
+    monkeypatch.delenv("AION_ENABLE_POLYMORPHISM", raising=False)
+    run_once(tmp_path, AuditLog(tmp_path / ".aion-state" / "audit.jsonl"))
+    assert called == []
+
+    monkeypatch.setenv("AION_ENABLE_POLYMORPHISM", "1")
+    run_once(tmp_path, AuditLog(tmp_path / ".aion-state" / "audit.jsonl"))
+    assert called == [tmp_path]
