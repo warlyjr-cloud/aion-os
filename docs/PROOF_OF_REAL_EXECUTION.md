@@ -237,3 +237,80 @@ verdade, não simulado ou revisado só por leitura de código.
 caminhos ainda não exercitados (ex.: um segundo push que dispare
 `workflow_dispatch` ou o cron semanal do scanner de segurança nunca foi
 observado nesta sessão).
+
+## Quarto piloto real: `service.configure` contra uma VM real, não o próprio repositório
+
+Registrado em **2026-08-08**. Os dois primeiros pilotos reais agiram em
+cima deste mesmo repositório (build Nix local, `uv.lock` do próprio
+projeto). Este é o primeiro tipo de ação real que sai desse limite e
+age sobre infraestrutura de terceiro — uma VM real na Google Cloud
+Platform, não um sandbox descartável nem um mock.
+
+### Ambiente
+
+- Projeto GCP dedicado `aion-os-pilot-2026`, criado nesta sessão
+  especificamente para este experimento (isolado dos outros projetos
+  já existentes na conta), com faturamento vinculado pelo usuário.
+- VM `aion-pilot-vm-01`, `e2-micro`, `us-central1-a`, Debian 12,
+  elegível ao free tier do GCP.
+- `gcloud` CLI 579.0.0, instalado e autenticado dentro do WSL2 (não há
+  suporte nativo confiável no Windows para este fluxo).
+- `AION_RUNTIME_MODE=real`, `AION_ALLOW_HOST_MUTATION=1`,
+  `AION_GCP_PROJECT`/`AION_GCP_ZONE`/`AION_GCP_INSTANCE` apontando pra
+  VM acima — as três variáveis são obrigatórias; sem elas
+  `service.configure` falha alto (não existe fallback silencioso pra
+  "localhost", porque agir na máquina errada é pior que falhar).
+
+### O que foi implementado
+
+`SafeExecutor._configure_remote_service()` (`src/executor/safe.py`):
+valida o alvo (nome do serviço) contra o mesmo padrão anti-injeção já
+usado em `package.propose`/`dependency.bump`, monta
+`gcloud compute ssh <instance> --command='sudo systemctl enable --now <service> && systemctl is-active <service>'`,
+preferindo `gcloud` nativo no PATH e caindo pro hop via `wsl` só quando
+necessário — mesmo padrão já usado pro Nix.
+
+### O que foi provado
+
+Rodado ponta a ponta pelo próprio `SafeExecutor` (não um script solto):
+
+```
+simulated: False
+status: success
+output: validated execution for service.configure on cron. output: active
+```
+
+E então **reverificado de forma independente, direto na VM, sem
+confiar na palavra do AION** — a mesma disciplina da primeira prova
+(que verificou o pacote Nix por listagem de diretório, não pela saída
+do AION):
+
+```
+$ systemctl is-enabled cron
+enabled
+$ systemctl is-active cron
+active
+$ systemctl status cron
+● cron.service - Regular background program processing daemon
+     Active: active (running) since Sat 2026-08-08 16:45:11 UTC; 2min 37s ago
+```
+
+O horário bate exatamente com o momento em que o comando foi executado
+pelo `SafeExecutor` — não é um serviço que já estava rodando antes.
+
+### O que isso prova, e o que não prova
+
+**Prova**: um terceiro tipo de ação real, o primeiro que age sobre
+infraestrutura que não é o próprio checkout do projeto, com verificação
+independente da alegação (não só a saída do próprio AION), e capacidade
+de configurar host remoto via variáveis de ambiente sem hardcode de
+identidade de máquina no executor.
+
+**Não prova**: rollback real para esta ação específica (diferente de
+`dependency.bump`, que reverte o `uv.lock` em caso de falha,
+`service.configure` hoje não desfaz a mudança se `systemctl enable`
+tiver sucesso mas alguma verificação futura falhar depois — isso é
+trabalho futuro real, não hipotético). Também não prova comportamento
+sob múltiplos hosts simultâneos, nem qualquer coisa além de
+`systemctl enable --now` (não testamos `disable`/`restart`/serviços com
+dependências complexas).

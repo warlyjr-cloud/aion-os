@@ -237,6 +237,71 @@ def test_safe_executor_prefers_native_nix_over_wsl_hop(
     assert captured_argv == [["/usr/bin/nix", "build", "nixpkgs#ffmpeg"]]
 
 
+def test_safe_executor_service_configure_requires_gcp_target_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AION_RUNTIME_MODE", "real")
+    monkeypatch.setenv("AION_ALLOW_HOST_MUTATION", "1")
+    monkeypatch.delenv("AION_GCP_PROJECT", raising=False)
+    monkeypatch.delenv("AION_GCP_ZONE", raising=False)
+    monkeypatch.delenv("AION_GCP_INSTANCE", raising=False)
+    action = _make_action("service.configure", "cron")
+
+    from executor import SafeExecutor
+
+    result = SafeExecutor().execute(action)
+
+    assert result.simulated is False
+    assert result.status == "failed"
+    assert "AION_GCP_PROJECT" in result.output
+
+
+def test_safe_executor_service_configure_ssh_via_gcloud(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Proved live against a real GCP e2-micro VM (aion-pilot-vm-01,
+    project aion-os-pilot-2026): AION enabled and started cron over SSH,
+    independently re-verified as active/enabled on the VM afterwards.
+    This test locks in the command construction with a mocked subprocess,
+    since CI has no GCP credentials to run the real SSH call."""
+    import executor.safe as safe_module
+
+    monkeypatch.setenv("AION_RUNTIME_MODE", "real")
+    monkeypatch.setenv("AION_ALLOW_HOST_MUTATION", "1")
+    monkeypatch.setenv("AION_GCP_PROJECT", "aion-os-pilot-2026")
+    monkeypatch.setenv("AION_GCP_ZONE", "us-central1-a")
+    monkeypatch.setenv("AION_GCP_INSTANCE", "aion-pilot-vm-01")
+    action = _make_action("service.configure", "cron")
+
+    def fake_which(name: str) -> str | None:
+        return "/usr/bin/gcloud" if name == "gcloud" else None
+
+    captured_argv: list[list[str]] = []
+
+    def fake_run(argv: list[str], **kwargs: object):
+        captured_argv.append(argv)
+        return safe_module.subprocess.CompletedProcess(args=argv, returncode=0, stdout="active")
+
+    monkeypatch.setattr(safe_module.shutil, "which", fake_which)
+    monkeypatch.setattr(safe_module.subprocess, "run", fake_run)
+
+    result = safe_module.SafeExecutor().execute(action)
+
+    assert result.simulated is False
+    assert result.status == "success"
+    assert captured_argv == [
+        [
+            "/usr/bin/gcloud",
+            "compute",
+            "ssh",
+            "aion-pilot-vm-01",
+            "--project=aion-os-pilot-2026",
+            "--zone=us-central1-a",
+            "--command=sudo systemctl enable --now cron && systemctl is-active cron",
+        ]
+    ]
+
+
 def test_safe_executor_dependency_bump_succeeds_when_tests_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -27,12 +27,13 @@ Categorias:
 | Benchmark comparativo (guiado 1.0 vs. ingênuo 0.253) | `benchmarks/os_evobench/reports/comparative-guarded-vs-naive.json` |
 | Trilha de auditoria com hash encadeado | `.aion-state/audit.jsonl`, verificado em `AuditLog.verify()` |
 | Pipeline de CI completa passando ponta a ponta (lint, type check, 76 testes, verificação de release, scan de segredos, gitleaks sobre histórico completo, SBOM, build do dashboard) | `gh run list` no commit `6568212` — todos os 5 workflows com conclusão `success`. Chegar até aqui exigiu corrigir 3 bugs reais encontrados só porque o pipeline rodou de ponta a ponta pela primeira vez (ver abaixo) |
+| `service.configure` executando contra infraestrutura de terceiro real (não o próprio repo) | `docs/PROOF_OF_REAL_EXECUTION.md` — VM GCP real (`aion-pilot-vm-01`), `cron` habilitado/iniciado via SSH pelo `SafeExecutor`, reverificado de forma independente na própria VM (`systemctl is-enabled`/`is-active`, não a saída do AION) |
 
 ## Scaffold funcional (roda, mas só em simulação/mock)
 
 | Componente | O que existe | O que falta pra sair de "simulado" |
 |---|---|---|
-| `SafeExecutor` para `service.configure`/`file.patch` | Sempre retorna `"verified successfully"` sem ação real | Implementar a ação real por tipo, como já foi feito para `package.propose` |
+| `SafeExecutor` para `file.patch` | Sempre retorna `"verified successfully"` sem ação real | Implementar a ação real, como já foi feito para `package.propose`, `dependency.bump` e `service.configure` |
 | `EvoBenchRunner` (as 5 tarefas completas) | Roda de verdade, mas contra um "gêmeo digital" (`DigitalTwin`), não infraestrutura real | Rodar candidatos contra ambiente real, não só o twin |
 | `AnthropicProvider` | Código real, nunca exercitado ponta a ponta nesta sessão (só `MockProvider` foi usado nas provas) | Rodar um ciclo real com API key de verdade e revisar a proposta gerada |
 | `src/generative_fs/fuse_driver.py` (antes `src/quantum_fs/`) | FUSE real (via lib `fuse`), mas gera conteúdo de arquivo chamando um LLM sob demanda — nunca montado/testado neste ambiente (Windows não tem FUSE) | Testar em Linux com FUSE instalado |

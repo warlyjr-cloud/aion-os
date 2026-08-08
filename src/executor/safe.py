@@ -89,6 +89,10 @@ class SafeExecutor:
                     result = subprocess.run(  # noqa: S603 - fixed argv list (no shell, no user input)
                         [uv_path, "run", "pytest"], capture_output=True, text=True, check=True
                     )
+                elif action.action_type == "service.configure":
+                    if not _SAFE_TARGET_PATTERN.fullmatch(action.target):
+                        raise ValueError(f"unsafe service target rejected: {action.target!r}")
+                    result = self._configure_remote_service(action.target)
                 elif action.action_type == "dependency.bump":
                     if not _SAFE_TARGET_PATTERN.fullmatch(action.target):
                         raise ValueError(f"unsafe dependency target rejected: {action.target!r}")
@@ -131,6 +135,55 @@ class SafeExecutor:
                 f"validated {'simulation' if simulated else 'execution'} "
                 f"for {action.action_type} on {action.target}"
             ),
+        )
+
+    def _configure_remote_service(self, target: str) -> subprocess.CompletedProcess[str]:
+        """Real service-management action: enable and start a systemd unit
+        on a remote host over SSH, then verify it's actually active. Unlike
+        package.propose/dependency.bump (which act on this machine or this
+        repo), this is the first action type that reaches infrastructure
+        this process doesn't own - a real GCP VM, addressed by env vars so
+        no host identity is hardcoded into the executor."""
+        project = os.environ.get("AION_GCP_PROJECT")
+        zone = os.environ.get("AION_GCP_ZONE")
+        instance = os.environ.get("AION_GCP_INSTANCE")
+        if not (project and zone and instance):
+            raise RuntimeError(
+                "service.configure requires AION_GCP_PROJECT, AION_GCP_ZONE, "
+                "and AION_GCP_INSTANCE to be set - there is no local/default "
+                "fallback host, since silently acting on the wrong machine "
+                "would be worse than failing loudly."
+            )
+
+        remote_command = f"sudo systemctl enable --now {target} && systemctl is-active {target}"
+        ssh_argv = [
+            "compute",
+            "ssh",
+            instance,
+            f"--project={project}",
+            f"--zone={zone}",
+            f"--command={remote_command}",
+        ]
+
+        gcloud_path = shutil.which("gcloud")
+        if gcloud_path is not None:
+            argv = [gcloud_path, *ssh_argv]
+        else:
+            wsl_path = shutil.which("wsl")
+            if wsl_path is None:
+                raise FileNotFoundError("neither gcloud nor wsl found on PATH")
+            # gcloud lives inside WSL's own filesystem, not on the WSL PATH
+            # under a non-interactive shell (the installer doesn't source
+            # .bashrc for `bash -c`), so it's addressed by absolute path.
+            remote_gcloud = "$HOME/google-cloud-sdk/bin/gcloud"
+            quoted_argv = " ".join(f"'{arg}'" for arg in ssh_argv)
+            argv = [wsl_path, "-e", "bash", "-lc", f"{remote_gcloud} {quoted_argv}"]
+
+        return subprocess.run(  # noqa: S603 - target validated above, argv list (no shell on this side)
+            argv,
+            capture_output=True,
+            text=True,
+            check=True,
         )
 
     def _bump_dependency_and_verify(
