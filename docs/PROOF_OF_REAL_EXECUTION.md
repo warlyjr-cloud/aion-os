@@ -184,3 +184,56 @@ encontra bugs reais que documentação e simulação escondem.
 **Não prova**: que isso funciona em outro gerenciador de pacote (npm, apt),
 em outro sistema operacional além de Windows/Linux, ou sob uso concorrente
 por múltiplos usuários/mutações ao mesmo tempo.
+
+## Terceiro piloto real: fazer o pipeline de CI rodar de ponta a ponta pela primeira vez
+
+Registrado em **2026-08-08**. Diferente dos dois pilotos acima (que provam
+uma ação do executor), este documenta o que aconteceu ao levar a CI da
+GitHub Actions do zero até `success` em todos os 5 workflows pela primeira
+vez — cada etapa que passou revelou a próxima etapa que nunca tinha rodado
+antes. São 3 bugs reais, nenhum deles hipotético ou de review de código:
+
+1. **Auto-modificação corrompendo o próprio checkout da CI.**
+   `src/aiond/daemon.py`'s `run_once()` tinha 10% de chance incondicional
+   de chamar `polymorph_system()`, que reescreve um arquivo aleatório sob
+   `src/executor/` via mutação AST. `scripts/verify_readme.py` invoca
+   `run_once()` com `AION_PROJECT_ROOT` apontando pro checkout real do
+   runner — então essa "auto-modificação" de risco elevado tinha chance
+   real de corromper o próprio `src/executor/safe.py` em produção de CI,
+   não em sandbox. Aconteceu: um `SyntaxError` no meio do pipeline, com
+   conteúdo de arquivo visivelmente corrompido, nunca commitado (mutação
+   em disco de runner efêmero). Corrigido com opt-in explícito
+   (`AION_ENABLE_POLYMORPHISM=1`, padrão desligado).
+
+2. **Scanner de segredos escaneando dependências vendorizadas como se
+   fossem código-fonte.** `scripts/secret_safety_check.py` recursava em
+   todo diretório sob a raiz do repo sem exclusão nenhuma — incluindo
+   `.venv/` e `.uv-cache/`. Em um checkout limpo isso contém pacotes de
+   terceiros instalados, e o casador de padrão sinalizou código real de
+   biblioteca como segredo vazado (`token: "..."` nos esquemas de cor do
+   pygments, `api_key: str = "..."` na anotação de tipo do próprio
+   `anthropic`). Todo run de CI limpo falhava nesse ponto; só passava
+   localmente por acaso, porque máquinas de desenvolvimento rodam esse
+   script de verificação de release com muito menos frequência do que
+   rodam `pytest`. Corrigido excluindo diretórios de vendor/build/cache
+   conhecidos antes de recursar.
+
+3. **gitleaks escaneando histórico completo, não só o push atual.** Ao
+   corrigir o item 2, os testes de regressão adicionados continham
+   strings no formato `nome = "valor"` como fixture literal no próprio
+   código-fonte do teste — e o gitleaks (que varre `git log` inteiro a
+   cada execução, por design) corretamente sinalizou isso como segredo
+   commitado. Corrigido reescrevendo as fixtures pra montar a string em
+   runtime (não como literal de linha única) e adicionando um allowlist
+   (`.gitleaks.toml`) explicando por que aquele arquivo de teste é um
+   falso positivo conhecido — sem reescrever histórico do git.
+
+**O que isso prova**: que "a CI passa" não é uma alegação — é
+`gh run list` mostrando `success` nos 5 workflows do commit `6568212`,
+e cada correção acima só existe porque o pipeline foi exercitado de
+verdade, não simulado ou revisado só por leitura de código.
+
+**O que isso não prova**: que não existem mais bugs escondidos atrás de
+caminhos ainda não exercitados (ex.: um segundo push que dispare
+`workflow_dispatch` ou o cron semanal do scanner de segurança nunca foi
+observado nesta sessão).

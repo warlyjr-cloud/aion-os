@@ -1,10 +1,10 @@
 # Estado real do projeto: provado vs. visão
 
-Registrado em **2026-08-07**, depois da sessão que produziu
-`docs/PROOF_OF_REAL_EXECUTION.md`. Objetivo: dar a qualquer pessoa (você,
-um investidor, um novo contribuidor) uma resposta honesta e específica
-pra "isso funciona de verdade?" — componente por componente, sem apagar
-nada e sem inflar nada.
+Registrado em **2026-08-07**, atualizado em **2026-08-08**, depois da
+sessão que produziu `docs/PROOF_OF_REAL_EXECUTION.md`. Objetivo: dar a
+qualquer pessoa (você, um investidor, um novo contribuidor) uma resposta
+honesta e específica pra "isso funciona de verdade?" — componente por
+componente, sem apagar nada e sem inflar nada.
 
 Categorias:
 - **Provado**: rodou de verdade nesta ou em sessões anteriores, com
@@ -26,6 +26,7 @@ Categorias:
 | Dashboard `/api/mutations/{id}` (decisão real, não só status) | 2 testes de integração |
 | Benchmark comparativo (guiado 1.0 vs. ingênuo 0.253) | `benchmarks/os_evobench/reports/comparative-guarded-vs-naive.json` |
 | Trilha de auditoria com hash encadeado | `.aion-state/audit.jsonl`, verificado em `AuditLog.verify()` |
+| Pipeline de CI completa passando ponta a ponta (lint, type check, 76 testes, verificação de release, scan de segredos, gitleaks sobre histórico completo, SBOM, build do dashboard) | `gh run list` no commit `6568212` — todos os 5 workflows com conclusão `success`. Chegar até aqui exigiu corrigir 3 bugs reais encontrados só porque o pipeline rodou de ponta a ponta pela primeira vez (ver abaixo) |
 
 ## Scaffold funcional (roda, mas só em simulação/mock)
 
@@ -47,7 +48,7 @@ Categorias:
 | `kernel/src/zkp.rs` (Zero-Knowledge Proof verifier) | `SNARKVerifier::verify_proof()` **sempre retorna `true`**, com comentário `// Stub: A verdadeira implementação calcularia a verificação polinomial`. Isso verifica nada. |
 | `kernel/` como um todo | 133 linhas Rust ao todo (`main.rs`, `vga.rs`, `depin.rs`, `pqc.rs`, `zkp.rs`). Nunca compilado/testado nesta sessão — não há evidência de que builda, muito menos boota. |
 | `clients/android_edge_node/` | ~1.500 linhas Kotlin (mais substancial que o kernel), incluindo um `PoStDaemonService` e `MainActivity`. Não verificado nesta sessão se compila ou roda em um dispositivo/emulador real. |
-| `src/evolution/polymorph.py` (auto-modificação de código) | Real e testado (reescreve `src/executor/*.py` em disco via AST), mas é uma feature de risco elevado por design — reescrever o próprio executor de segurança automaticamente é o tipo de coisa que merece revisão humana antes de qualquer claim de "seguro". |
+| `src/evolution/polymorph.py` (auto-modificação de código) | Real e testado (reescreve `src/executor/*.py` em disco via AST), continua sendo uma feature de risco elevado por design — reescrever o próprio executor de segurança automaticamente merece revisão humana antes de qualquer claim de "seguro". **Incidente real, não hipotético**: até 2026-08-08 essa reescrita disparava com 10% de chance a cada `run_once()`, incondicionalmente — e `scripts/verify_readme.py` chama `run_once()` contra o checkout real da CI. Isso corrompeu `src/executor/safe.py` no meio do pipeline de CI (nunca chegou a ser commitado — é mutação em disco no runner efêmero — mas quebrou a importação do pacote). Corrigido exigindo opt-in explícito (`AION_ENABLE_POLYMORPHISM=1`, padrão desligado) antes do sorteio acontecer, com teste de regressão travando esse comportamento. |
 
 ## Como manter isso atualizado
 
