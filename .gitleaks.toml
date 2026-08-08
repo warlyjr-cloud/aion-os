@@ -1,0 +1,7 @@
+title = "aion-os gitleaks config"
+
+[allowlist]
+description = "Known false positive: fixture data for the repo's own secret-detection test suite (scripts/secret_safety_check.py). This file intentionally contains secret-shaped strings to verify the scanner still catches real leaks; it never holds a real credential."
+paths = [
+  '''tests/unit/test_secret_safety_check\.py''',
+]
